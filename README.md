@@ -6,3 +6,4 @@ JavaScript版本的算法学习
 
 ### Microsoft
 - [two sum](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B1%5Dtwo%20sum.md)
+- [add two number](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B2%5DAdd%20Two%20Number.md)
