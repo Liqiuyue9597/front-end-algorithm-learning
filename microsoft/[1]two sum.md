@@ -5,7 +5,7 @@ You may assume that each input would have exactly one solution, and you may not 
 
 You can return the answer in any order.
 
-解法：
+### 思路
 - 时间换空间：双重for循环，但是不用新开map或者对象去存。时间o(n^2)，空间是o(1)
 - 空间换时间： 新开空间存，时间o(n)，空间o(n)
 
