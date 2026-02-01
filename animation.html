@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无重复字符最长子串 - 动画演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .string-display {
+            display: flex;
+            gap: 5px;
+            margin: 30px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+            min-height: 100px;
+            align-items: center;
+        }
+
+        .char-box {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 3px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            transition: all 0.5s ease;
+            position: relative;
+        }
+
+        .char-box.current {
+            border-color: #667eea;
+            background: #e8eaf6;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .char-box.in-window {
+            background: #c8e6c9;
+            border-color: #4caf50;
+        }
+
+        .char-box.repeat {
+            background: #ffcdd2;
+            border-color: #f44336;
+            animation: blink 0.5s 3;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .char-box .index {
+            position: absolute;
+            top: -20px;
+            font-size: 12px;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .info-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .panel {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .panel h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .variable {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .variable:last-child {
+            border-bottom: none;
+        }
+
+        .variable-label {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .variable-value {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .map-display {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .map-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .map-item.updated {
+            background: #fff9c4;
+            animation: highlight 0.5s;
+        }
+
+        @keyframes highlight {
+            0%, 100% { background: white; }
+            50% { background: #fff9c4; }
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .explanation {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 5px;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .speed-control label {
+            color: #666;
+        }
+
+        .speed-control input[type="range"] {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 无重复字符最长子串 - 动画演示</h1>
+        
+        <div class="input-section">
+            <input type="text" id="inputString" value="abcabcbb" placeholder="输入字符串">
+            <button id="startBtn">开始动画</button>
+            <button id="resetBtn">重置</button>
+        </div>
+
+        <div class="speed-control">
+            <label>速度：</label>
+            <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1">
+            <span id="speedValue">1x</span>
+        </div>
+
+        <div class="controls">
+            <button id="prevBtn" disabled>⏮ 上一步</button>
+            <button id="playPauseBtn" disabled>⏸ 暂停</button>
+            <button id="nextBtn" disabled>⏭ 下一步</button>
+        </div>
+
+        <div class="string-display" id="stringDisplay"></div>
+
+        <div class="info-panel">
+            <div class="panel">
+                <h3>📊 变量状态</h3>
+                <div class="variable">
+                    <span class="variable-label">start:</span>
+                    <span class="variable-value" id="startValue">0</span>
+                </div>
+                <div class="variable">
+                    <span class="variable-label">i:</span>
+                    <span class="variable-value" id="iValue">-</span>
+                </div>
+                <div class="variable">
+                    <span class="variable-label">res:</span>
+                    <span class="variable-value" id="resValue">0</span>
+                </div>
+                <div class="variable">
+                    <span class="variable-label">prevIndex:</span>
+                    <span class="variable-value" id="prevIndexValue">-</span>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>🗺️ Map (字符位置映射)</h3>
+                <div class="map-display" id="mapDisplay"></div>
+            </div>
+        </div>
+
+        <div class="result" id="resultDisplay">
+            结果: <span id="finalResult">-</span>
+        </div>
+
+        <div class="explanation" id="explanation">
+            点击"开始动画"查看算法执行过程
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        let animationSteps = [];
+        let isPlaying = false;
+        let animationTimer = null;
+        let speed = 1;
+
+        const inputString = document.getElementById('inputString');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const stringDisplay = document.getElementById('stringDisplay');
+        const mapDisplay = document.getElementById('mapDisplay');
+        const explanation = document.getElementById('explanation');
+        const finalResult = document.getElementById('finalResult');
+
+        function updateSpeed() {
+            speed = parseFloat(speedSlider.value);
+            speedValue.textContent = speed + 'x';
+        }
+
+        speedSlider.addEventListener('input', updateSpeed);
+
+        function generateSteps(s) {
+            const steps = [];
+            const map = new Map();
+            let start = 0;
+            let res = 0;
+
+            // 初始状态
+            steps.push({
+                i: -1,
+                start,
+                res,
+                map: new Map(map),
+                explanation: '初始化：start=0, res=0, Map为空',
+                window: []
+            });
+
+            for (let i = 0; i < s.length; i++) {
+                const char = s[i];
+                const prevIndex = map.get(char) ?? -1;
+                const inWindow = prevIndex >= 0 && prevIndex >= start;
+                
+                let explanation = '';
+                let window = [];
+
+                if (inWindow) {
+                    // 发现重复字符
+                    res = Math.max(res, i - start);
+                    explanation = `位置 ${i}: 字符 '${char}' 重复出现！\n` +
+                                `prevIndex=${prevIndex} >= start=${start} ✅\n` +
+                                `更新 res = max(${res}, ${i}-${start}) = ${res}\n` +
+                                `移动窗口: start = ${prevIndex} + 1 = ${prevIndex + 1}`;
+                    start = prevIndex + 1;
+                    window = Array.from({length: i - start + 1}, (_, idx) => start + idx);
+                } else {
+                    // 新字符
+                    explanation = `位置 ${i}: 字符 '${char}' 第一次出现\n` +
+                                `prevIndex=${prevIndex === -1 ? '不存在' : prevIndex}\n` +
+                                `窗口扩展: [${start}, ${i}]`;
+                    window = Array.from({length: i - start + 1}, (_, idx) => start + idx);
+                }
+
+                map.set(char, i);
+
+                steps.push({
+                    i,
+                    char,
+                    start,
+                    res,
+                    prevIndex: prevIndex === -1 ? null : prevIndex,
+                    map: new Map(map),
+                    explanation,
+                    window,
+                    isRepeat: inWindow
+                });
+            }
+
+            // 最后计算
+            const finalLength = s.length - start;
+            res = Math.max(res, finalLength);
+            steps.push({
+                i: s.length,
+                start,
+                res,
+                map: new Map(map),
+                explanation: `循环结束，计算最后一个窗口长度\n` +
+                           `max(res=${steps[steps.length-1].res}, ${s.length}-${start}=${finalLength}) = ${res}`,
+                window: Array.from({length: finalLength}, (_, idx) => start + idx),
+                isFinal: true
+            });
+
+            return steps;
+        }
+
+        function renderStep(step) {
+            const s = inputString.value;
+            
+            // 清空显示
+            stringDisplay.innerHTML = '';
+            mapDisplay.innerHTML = '';
+
+            // 渲染字符
+            for (let idx = 0; idx < s.length; idx++) {
+                const charBox = document.createElement('div');
+                charBox.className = 'char-box';
+                charBox.textContent = s[idx];
+                
+                const indexLabel = document.createElement('div');
+                indexLabel.className = 'index';
+                indexLabel.textContent = idx;
+                charBox.appendChild(indexLabel);
+
+                // 当前字符
+                if (idx === step.i) {
+                    charBox.classList.add('current');
+                }
+
+                // 窗口内
+                if (step.window && step.window.includes(idx)) {
+                    charBox.classList.add('in-window');
+                }
+
+                // 重复字符
+                if (step.isRepeat && idx === step.prevIndex) {
+                    charBox.classList.add('repeat');
+                }
+
+                stringDisplay.appendChild(charBox);
+            }
+
+            // 更新变量
+            document.getElementById('startValue').textContent = step.start;
+            document.getElementById('iValue').textContent = step.i === -1 ? '-' : step.i;
+            document.getElementById('resValue').textContent = step.res;
+            document.getElementById('prevIndexValue').textContent = 
+                step.prevIndex === null || step.prevIndex === undefined ? '-' : step.prevIndex;
+
+            // 更新 Map
+            const mapEntries = Array.from(step.map.entries()).sort((a, b) => a[1] - b[1]);
+            mapEntries.forEach(([char, pos]) => {
+                const mapItem = document.createElement('div');
+                mapItem.className = 'map-item';
+                if (step.i !== -1 && step.char === char && pos === step.i) {
+                    mapItem.classList.add('updated');
+                }
+                mapItem.innerHTML = `<span><strong>${char}</strong></span><span>位置 ${pos}</span>`;
+                mapDisplay.appendChild(mapItem);
+            });
+
+            // 更新说明
+            explanation.textContent = step.explanation;
+
+            // 更新结果
+            if (step.isFinal) {
+                finalResult.textContent = step.res;
+            }
+        }
+
+        function playAnimation() {
+            if (currentStep >= animationSteps.length - 1) {
+                pauseAnimation();
+                return;
+            }
+
+            currentStep++;
+            renderStep(animationSteps[currentStep]);
+            updateButtons();
+
+            if (currentStep < animationSteps.length - 1) {
+                animationTimer = setTimeout(playAnimation, 2000 / speed);
+            } else {
+                pauseAnimation();
+            }
+        }
+
+        function pauseAnimation() {
+            isPlaying = false;
+            playPauseBtn.textContent = '▶ 播放';
+            if (animationTimer) {
+                clearTimeout(animationTimer);
+                animationTimer = null;
+            }
+        }
+
+        function resumeAnimation() {
+            isPlaying = true;
+            playPauseBtn.textContent = '⏸ 暂停';
+            playAnimation();
+        }
+
+        function updateButtons() {
+            prevBtn.disabled = currentStep === 0;
+            nextBtn.disabled = currentStep >= animationSteps.length - 1;
+            
+            if (currentStep >= animationSteps.length - 1) {
+                pauseAnimation();
+            }
+        }
+
+        startBtn.addEventListener('click', () => {
+            const s = inputString.value;
+            if (!s) {
+                alert('请输入字符串');
+                return;
+            }
+
+            animationSteps = generateSteps(s);
+            currentStep = 0;
+            renderStep(animationSteps[0]);
+            
+            prevBtn.disabled = false;
+            playPauseBtn.disabled = false;
+            nextBtn.disabled = false;
+            startBtn.disabled = true;
+            inputString.disabled = true;
+
+            resumeAnimation();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            pauseAnimation();
+            currentStep = 0;
+            animationSteps = [];
+            stringDisplay.innerHTML = '';
+            mapDisplay.innerHTML = '';
+            explanation.textContent = '点击"开始动画"查看算法执行过程';
+            finalResult.textContent = '-';
+            
+            prevBtn.disabled = true;
+            playPauseBtn.disabled = true;
+            nextBtn.disabled = true;
+            startBtn.disabled = false;
+            inputString.disabled = false;
+
+            document.getElementById('startValue').textContent = '0';
+            document.getElementById('iValue').textContent = '-';
+            document.getElementById('resValue').textContent = '0';
+            document.getElementById('prevIndexValue').textContent = '-';
+        });
+
+        prevBtn.addEventListener('click', () => {
+            pauseAnimation();
+            if (currentStep > 0) {
+                currentStep--;
+                renderStep(animationSteps[currentStep]);
+                updateButtons();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            pauseAnimation();
+            if (currentStep < animationSteps.length - 1) {
+                currentStep++;
+                renderStep(animationSteps[currentStep]);
+                updateButtons();
+            }
+        });
+
+        playPauseBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                pauseAnimation();
+            } else {
+                resumeAnimation();
+            }
+        });
+    </script>
+</body>
+</html>
+

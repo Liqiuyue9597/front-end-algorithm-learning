@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Create LeetCode Problem",
+      "type": "shell",
+      "command": "node create-leetcode.js",
+      "args": [
+        "${input:leetcodeUrl}"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "leetcodeUrl",
+      "type": "promptString",
+      "description": "请输入 LeetCode 题目链接",
+      "default": "https://leetcode-cn.com/problems/"
+    }
+  ]
+}
+
