@@ -2,12 +2,29 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Create LeetCode from Clipboard",
+      "type": "shell",
+      "command": "node create-leetcode.js",
+      "args": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
       "label": "Create LeetCode Problem",
       "type": "shell",
       "command": "node create-leetcode.js",
       "args": [
         "${input:leetcodeUrl}"
       ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",

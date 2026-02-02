@@ -11,6 +11,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 // 从 URL 提取题目信息
 function extractProblemInfo(url) {
@@ -32,6 +33,28 @@ function extractProblemInfo(url) {
   const cleanUrl = url.replace(/\/description.*$/, '').replace(/\?.*$/, '');
   
   return { slug, title, url: cleanUrl };
+}
+
+// 从剪贴板读取并提取第一个 LeetCode URL
+function getUrlFromClipboard() {
+  try {
+    let text = '';
+    if (process.platform === 'darwin') {
+      text = execSync('pbpaste', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+    } else if (process.platform === 'linux') {
+      try {
+        text = execSync('xclip -selection clipboard -o', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+      } catch {
+        return null;
+      }
+    } else {
+      return null;
+    }
+    const match = text.match(/https:\/\/leetcode(?:-cn)?\.(?:com|cn)\/problems\/[^\s?]+/);
+    return match ? match[0].replace(/\?.*$/, '') : null;
+  } catch {
+    return null;
+  }
 }
 
 // 获取下一个序号
@@ -98,12 +121,22 @@ function createProblemFile(url, number, dirName) {
 
 // 主函数
 function main() {
-  const args = process.argv.slice(2);
-  
-  if (args.length === 0) {
-    console.log(`
+  let args = process.argv.slice(2);
+  let url = args[0];
+
+  // 无参数时尝试从剪贴板读取 URL
+  if (args.length === 0 || !url) {
+    const clipUrl = getUrlFromClipboard();
+    if (clipUrl) {
+      console.log('📋 从剪贴板读取到 URL:', clipUrl);
+      url = clipUrl;
+      // args 保持为 [url], number 和 dirName 用 null
+      args = [url];
+    } else {
+      console.log(`
 使用方法：
   node create-leetcode.js <leetcode-url> [序号] [目录名]
+  node create-leetcode.js                          # 无参数时从剪贴板读取 URL（需先复制题目链接）
 
 示例：
   node create-leetcode.js https://leetcode-cn.com/problems/two-sum/
@@ -111,17 +144,20 @@ function main() {
   node create-leetcode.js https://leetcode.com/problems/two-sum/ 5 google
 
 参数说明：
-  leetcode-url: LeetCode 题目链接（必需）
+  leetcode-url: LeetCode 题目链接（必需，或从剪贴板读取）
   序号: 文件序号，如果不提供会自动计算下一个序号（可选）
   目录名: 目标目录，默认为 'microsoft'（可选）
     `);
-    process.exit(1);
+      if (process.argv.length === 2) {
+        console.log('❌ 剪贴板中未找到 LeetCode URL，请复制题目链接后重试，或直接传入 URL 参数。');
+      }
+      process.exit(1);
+    }
   }
-  
-  const url = args[0];
+
   const number = args[1] ? parseInt(args[1]) : null;
   const dirName = args[2] || null;
-  
+
   try {
     createProblemFile(url, number, dirName);
   } catch (error) {
