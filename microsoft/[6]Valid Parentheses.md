@@ -3,15 +3,36 @@
 
 An input string is valid if:
 
-Open brackets must be closed by the same type of brackets.
-Open brackets must be closed in the correct order.
-Every close bracket has a corresponding open bracket of the same type.
+1.Open brackets must be closed by the same type of brackets.
+2.Open brackets must be closed in the correct order.
+3.Every close bracket has a corresponding open bracket of the same type.
 
 
 ### 思路
-
+用**栈**去配对。
 
 ### 代码
 ```js
+/**
+ * @param {string} s
+ * @return {boolean}
+ */
+var isValid = function(s) {
+  const map = {
+    '(': ')',
+    '{':'}',
+    '[':']'
+  };
+  const arr = []
+  for (let i=0; i<s.length;i++) {
+    if (map[s[i]]) {
+      arr.push(s[i])
+    } else {
+      const a = arr.pop();
+      if (map[a] !== s[i]) return false;
+    }
+  }
+  return arr.length === 0
+};
 
 ```
