@@ -57,5 +57,10 @@ leetcode-new https://leetcode-cn.com/problems/two-sum/
 在 VS Code 中按 `Cmd+Shift+P`，输入 "Tasks: Run Task"，选择 "Create LeetCode Problem"，然后输入 LeetCode URL。
 
 ### Microsoft
-- [two sum](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B1%5Dtwo%20sum.md)
-- [add two number](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B2%5DAdd%20Two%20Number.md)
+- [Two Sum](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B1%5Dtwo%20sum.md)
+- [Add Two Numbers](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B2%5DAdd%20Two%20Number.md)
+- [Longest Substring Without Repeating Characters](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B3%5DLongest%20Substring%20Without%20Repeating%20Characters.md)
+- [Container With Most Water](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B4%5DContainer%20With%20Most%20Water.md)
+- [3Sum](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B5%5D3sum.md)
+- [Valid Parentheses](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B6%5DValid%20Parentheses.md)
+- [Trapping Rain Water](https://github.com/Liqiuyue9597/front-end-algorithm-learning/blob/master/microsoft/%5B7%5DTrapping%20Rain%20Water.md)
