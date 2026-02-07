@@ -18,5 +18,20 @@ Return the maximum profit you can achieve from this transaction. If you cannot a
 
 ### 代码
 ```js
+/**
+ * @param {number[]} prices
+ * @return {number}
+ */
+var maxProfit = function (prices) {
+  let minPrice = prices[0];
+  let maxProfit = 0;
+  for (let i = 1; i < prices.length; i++) {
+    if (prices[i] > minPrice) {
+      maxProfit = Math.max(maxProfit, prices[i] - minPrice);
+    }
+    minPrice = Math.min(minPrice, prices[i]);
+  }
 
+  return maxProfit;
+};
 ```
