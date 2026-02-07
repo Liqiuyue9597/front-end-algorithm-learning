@@ -8,6 +8,29 @@
 
 ---
 
+## 🔗 和 Container With Most Water 的联系
+
+| | **Container With Most Water** | **Trapping Rain Water** |
+|---|------------------------------|--------------------------|
+| **题意** | 选两根线 (i, j)，求容器能装的最大水量 | 求所有位置能接的雨水总量 |
+| **公式** | 面积 = min(height[i], height[j]) × (j − i) | 每列 = min(左边最高, 右边最高) − 当前高度 |
+| **共同点** | **水位由矮的一边决定**（min 决定上限） | 同上 |
+| **解法** | 双指针：谁矮移谁 | 预处理左右最大值 或 双指针 |
+| **目标** | 找一对 (i, j) 使面积最大 | 对每个位置求和 |
+
+**联系**：
+- 都用「**水会从矮的一边流走**」→ 水位 = min(两侧高度)。
+- 都可以用**双指针**（接雨水还可以用预处理）。
+- 物理直觉类似：水高不能超过较矮的挡板。
+
+**区别**：
+- Container：只选**一对**线，求**最大**面积。
+- Trapping：对**每一列**算能接的水，再**求和**。
+
+做过 Container 再做这道题，会更容易想到「min(左边最高, 右边最高)」决定水位。
+
+---
+
 ## ⚡ 为什么预处理方法速度不够快？
 
 ### 预处理方法的性能分析
@@ -43,16 +66,61 @@ for (let i = 0; i < n; i++) { ... }  // O(n)
 **核心思想**：我们只需要知道「左边最高」和「右边最高」的**较小值**，不需要知道具体是哪个。
 
 **关键洞察**：
-- 当 `height[left] < height[right]` 时，说明 `leftMax < rightMax`（因为右边至少有一个 `height[right]` 这么高）
+- 当 `height[left] < height[right]` 时，说明 `leftMax < rightMax`（推导见下）
 - 所以 `left` 这一列的水位由 `leftMax` 决定（水会从矮的一边流走）
 - 可以安全地计算 `left` 这一列的水，然后 `left++`
 - 同理，当 `height[right] <= height[left]` 时，可以安全地计算 `right` 这一列
+
+**「当 height[left] < height[right] 时，必有 leftMax < rightMax」是怎么来的？**
+
+1. **由定义**：`rightMax` 是「从下标 right 到 n-1」这段里的最大高度，所以 **rightMax ≥ height[right]**。
+2. **由条件**：`height[left] < height[right]`，所以 **rightMax ≥ height[right] > height[left]**，即 **rightMax > height[left]**。（但这还没得到 leftMax < rightMax。）
+
+3. **关键**：`leftMax` 来自「从 0 到 left-1」的某根柱子。这根柱子（设为位置 j）是在**之前某一步**被处理的；那一步我们**只有**在 `height[left] < height[right]` 时才会移动 `left`，所以当时一定有 **height[j] < 当时的 height[right]**，即 **leftMax ≤ height[j] < 当时右边的某根柱子**。而「当时右边」的柱子都在当前 `right` 的右边（或就是 right），所以它们的最大值 **≤ 当前的 rightMax**，因此 **leftMax < 当时某根右边柱子 ≤ rightMax**，即 **leftMax < rightMax**。
+
+4. **一句话**：谁矮移谁 → 当初更新出 `leftMax` 的那一步，左边比右边矮 → 所以左边那根不会超过「当时右边」的最大值 → 而当时右边 ≤ 当前 rightMax → 所以 leftMax < rightMax。
+
+**「left 这一列」的计算逻辑**（right 同理）：
+
+既然已经知道 `left` 这一列的水位由 `leftMax` 决定（右边更高，水不会从右边流走），那么：
+
+1. **若 `height[left] >= leftMax`**  
+   当前柱子不低于「左边遇到过的最高的墙」，这一列接不到水；同时要把「左边最高」更新成当前柱子，供后面的列用：  
+   `leftMax = height[left]`，然后 `left++`。
+
+2. **若 `height[left] < leftMax`**  
+   当前柱子比「左边最高」矮，水位就是 `leftMax`，这一列能接的水 = 水位 − 当前高度：  
+   `water += leftMax - height[left]`，然后 `left++`。
+
+对应代码就是：
+
+```js
+if (height[left] >= leftMax) {
+  leftMax = height[left];  // 接不到水，只更新左边最高
+} else {
+  water += leftMax - height[left];  // 能接的水 = 水位 - 当前高度
+}
+left++;
+```
+
+**小结**：水位由 `leftMax` 决定 → 能接的水 = `leftMax - height[left]`（若当前比 leftMax 矮）；否则只更新 leftMax，不加水。
 
 **优势**：
 - ✅ **一次遍历**：只需要遍历一次数组
 - ✅ **O(1) 空间**：只需要几个变量，不需要额外数组
 - ✅ **缓存友好**：顺序访问，内存访问效率高
 - ✅ **实际运行更快**：常数因子小，在 LeetCode 上通常能跑进前 90%+
+
+**什么是「常数因子」？**
+
+大 O 只关心「随 n 增长的次数」，会忽略前面的常数。例如：
+- `T = 3n` 和 `T = n` 都写成 **O(n)**（常数 3 被忽略）
+- `T = 2n²` 和 `T = n²` 都写成 **O(n²)**（常数 2 被忽略）
+
+这里的 **常数因子** 就是被大 O 忽略掉的那个倍数（如 2、3）。  
+预处理方法：三次遍历 + 两次数组分配，相当于「3n + 一些固定开销」，常数因子大。  
+双指针方法：一次遍历 + 几个变量，相当于「1n + 很少开销」，常数因子小。  
+所以虽然都是 O(n)，双指针实际跑得更快。
 
 ---
 
@@ -164,6 +232,54 @@ var trap = function (height) {
   return water;
 };
 ```
+
+---
+
+**方法三：双指针（先更新 max，再比「左右最大」）——和你贴的写法一致**
+
+你这种写法和上面是**同一套双指针思路**，只是实现方式不同，结果等价，而且**更短、更好写**。
+
+**区别对比**：
+
+| | 笔记里的写法 | 你的写法 |
+|---|-------------|----------|
+| **比的是谁** | 比 `height[left]` 和 `height[right]`，谁小动谁 | 比 `preMax` 和 `sufMax`，谁小算谁并动谁 |
+| **何时更新 max** | 只在「当前柱子接不到水」时更新对应的 leftMax/rightMax | **每轮一开始**就先更新 `preMax`、`sufMax`（都包含当前指针位置） |
+| **何时加水** | 只有当前高度 < 对应的 max 时才 `water += max - height[i]` | 每轮**一定**加一次水：`ans += preMax - height[left]` 或 `ans += sufMax - height[right]`（因为先更新了 max，所以这里一定 ≥ 0） |
+
+**为什么你的写法也对？**
+
+1. **先更新再算**：每轮先做 `preMax = max(preMax, height[left])`、`sufMax = max(sufMax, height[right])`，所以此时 `preMax ≥ height[left]`、`sufMax ≥ height[right]`，后面做减法不会出现负数。
+2. **比的是「左右最大」**：`preMax < sufMax` 表示「左边遇到的最大高度」比「右边遇到的最大高度」小，说明**左边是瓶颈**，当前 left 位置的水位就是 `preMax`，所以用 `preMax - height[left]` 算这一列的水是对的；右边同理。
+3. **和笔记里「谁矮移谁」是一回事**：笔记里是「当前柱子谁矮就动谁」，你是「左右两侧的最大值谁小就处理哪一侧」——本质都是「瓶颈在哪边就处理哪边」，所以等价。
+
+**你的写法（TypeScript）**：
+
+```ts
+function trap(height: number[]): number {
+  let ans = 0;
+  let preMax = 0;   // 左边 [0..left] 的最大值（含 left）
+  let sufMax = 0;   // 右边 [right..n-1] 的最大值（含 right）
+  let left = 0;
+  let right = height.length - 1;
+
+  while (left < right) {
+    preMax = Math.max(preMax, height[left]);
+    sufMax = Math.max(sufMax, height[right]);
+
+    if (preMax < sufMax) {
+      ans += preMax - height[left++];   // 左边是瓶颈，算 left 这一列
+    } else {
+      ans += sufMax - height[right--];  // 右边是瓶颈，算 right 这一列
+    }
+  }
+
+  return ans;
+}
+```
+
+**小结**：  
+你的写法和笔记里的双指针是**同一思路、两种实现**：笔记里是「比当前柱子高度、谁小动谁、需要时再更新 max」；你是「每轮先更新两侧 max，再比两侧 max，谁小算谁并动谁」。你的写法**更简洁**（不用分「更新 max」和「加水」两种情况），而且逻辑一样正确，可以放心用。
 
 ---
 
