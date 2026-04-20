@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反转链表动画演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e7ff;
+            color: #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #c7d2fe;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .canvas-container {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 40px;
+            margin-bottom: 30px;
+            min-height: 300px;
+            position: relative;
+        }
+
+        .node {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.6s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .node.prev {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .node.current {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            transform: scale(1.1);
+        }
+
+        .node.next {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .node.null {
+            background: #94a3b8;
+            font-size: 14px;
+        }
+
+        .arrow {
+            position: absolute;
+            height: 3px;
+            background: #667eea;
+            transform-origin: left center;
+            transition: all 0.6s ease;
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: -5px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid #667eea;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
+
+        .arrow.reversed {
+            background: #f5576c;
+        }
+
+        .arrow.reversed::after {
+            border-left-color: #f5576c;
+        }
+
+        .info-panel {
+            background: #f1f5f9;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .info-item {
+            flex: 1;
+            min-width: 200px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            color: #1e293b;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-display {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            overflow-x: auto;
+        }
+
+        .code-line {
+            transition: all 0.3s ease;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .code-line.highlight {
+            background: #475569;
+            border-left: 3px solid #4facfe;
+            padding-left: 10px;
+        }
+
+        .keyword {
+            color: #c792ea;
+        }
+
+        .variable {
+            color: #82aaff;
+        }
+
+        .comment {
+            color: #546e7a;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 反转链表动画演示</h1>
+        
+        <div class="controls">
+            <button class="btn-primary" onclick="startAnimation()">开始演示</button>
+            <button class="btn-secondary" onclick="nextStep()" id="nextBtn" disabled>下一步</button>
+            <button class="btn-secondary" onclick="reset()">重置</button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                <span>prev 指针</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                <span>current 指针</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"></div>
+                <span>next 临时变量</span>
+            </div>
+        </div>
+
+        <div class="canvas-container" id="canvas"></div>
+
+        <div class="info-panel">
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-label">当前步骤</div>
+                    <div class="info-value" id="stepInfo">点击"开始演示"</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">循环次数</div>
+                    <div class="info-value" id="loopCount">0</div>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-label">prev</div>
+                    <div class="info-value" id="prevValue">null</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">current</div>
+                    <div class="info-value" id="currentValue">1</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">next</div>
+                    <div class="info-value" id="nextValue">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-display">
+            <div class="code-line" id="line1"><span class="keyword">let</span> <span class="variable">prev</span> = <span class="keyword">null</span>;</div>
+            <div class="code-line" id="line2"><span class="keyword">let</span> <span class="variable">current</span> = head;</div>
+            <div class="code-line" id="line3"></div>
+            <div class="code-line" id="line4"><span class="keyword">while</span> (current !== <span class="keyword">null</span>) {</div>
+            <div class="code-line" id="line5">&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// 1. 保存下一个节点</span></div>
+            <div class="code-line" id="line6">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">const</span> <span class="variable">next</span> = current.next;</div>
+            <div class="code-line" id="line7">&nbsp;&nbsp;&nbsp;&nbsp;</div>
+            <div class="code-line" id="line8">&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// 2. 反转当前节点的指向</span></div>
+            <div class="code-line" id="line9">&nbsp;&nbsp;&nbsp;&nbsp;current.next = prev;</div>
+            <div class="code-line" id="line10">&nbsp;&nbsp;&nbsp;&nbsp;</div>
+            <div class="code-line" id="line11">&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// 3. 移动指针</span></div>
+            <div class="code-line" id="line12">&nbsp;&nbsp;&nbsp;&nbsp;prev = current;</div>
+            <div class="code-line" id="line13">&nbsp;&nbsp;&nbsp;&nbsp;current = next;</div>
+            <div class="code-line" id="line14">}</div>
+            <div class="code-line" id="line15"></div>
+            <div class="code-line" id="line16"><span class="keyword">return</span> prev;</div>
+        </div>
+    </div>
+
+    <script>
+        const nodes = [
+            { value: 1, x: 150, y: 100 },
+            { value: 2, x: 300, y: 100 },
+            { value: 3, x: 450, y: 100 },
+            { value: 'null', x: 600, y: 100 }
+        ];
+
+        let state = {
+            step: 0,
+            loopIndex: 0,
+            prevIndex: -1,
+            currentIndex: 0,
+            nextIndex: -1,
+            arrows: [],
+            isAnimating: false
+        };
+
+        function reset() {
+            state = {
+                step: 0,
+                loopIndex: 0,
+                prevIndex: -1,
+                currentIndex: 0,
+                nextIndex: -1,
+                arrows: [
+                    { from: 0, to: 1, reversed: false },
+                    { from: 1, to: 2, reversed: false },
+                    { from: 2, to: 3, reversed: false }
+                ],
+                isAnimating: false
+            };
+            render();
+            updateInfo();
+            clearCodeHighlight();
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('stepInfo').textContent = '点击"开始演示"';
+        }
+
+        function render() {
+            const canvas = document.getElementById('canvas');
+            canvas.innerHTML = '';
+
+            // 绘制箭头
+            state.arrows.forEach(arrow => {
+                if (arrow.from >= 0 && arrow.to >= 0) {
+                    const fromNode = nodes[arrow.from];
+                    const toNode = nodes[arrow.to];
+                    const arrowEl = document.createElement('div');
+                    arrowEl.className = 'arrow' + (arrow.reversed ? ' reversed' : '');
+                    
+                    const dx = toNode.x - fromNode.x;
+                    const dy = toNode.y - fromNode.y;
+                    const length = Math.sqrt(dx * dx + dy * dy) - 70;
+                    const angle = Math.atan2(dy, dx);
+                    
+                    arrowEl.style.width = length + 'px';
+                    arrowEl.style.left = (fromNode.x + 60) + 'px';
+                    arrowEl.style.top = (fromNode.y + 30) + 'px';
+                    arrowEl.style.transform = `rotate(${angle}rad)`;
+                    
+                    canvas.appendChild(arrowEl);
+                }
+            });
+
+            // 绘制节点
+            nodes.forEach((node, index) => {
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'node';
+                
+                if (node.value === 'null') {
+                    nodeEl.classList.add('null');
+                }
+                
+                if (index === state.prevIndex) {
+                    nodeEl.classList.add('prev');
+                }
+                if (index === state.currentIndex) {
+                    nodeEl.classList.add('current');
+                }
+                if (index === state.nextIndex) {
+                    nodeEl.classList.add('next');
+                }
+                
+                nodeEl.textContent = node.value;
+                nodeEl.style.left = node.x + 'px';
+                nodeEl.style.top = node.y + 'px';
+                
+                canvas.appendChild(nodeEl);
+            });
+        }
+
+        function updateInfo() {
+            document.getElementById('loopCount').textContent = state.loopIndex;
+            document.getElementById('prevValue').textContent = state.prevIndex === -1 ? 'null' : nodes[state.prevIndex].value;
+            document.getElementById('currentValue').textContent = state.currentIndex === -1 || state.currentIndex >= nodes.length ? 'null' : nodes[state.currentIndex].value;
+            document.getElementById('nextValue').textContent = state.nextIndex === -1 ? '-' : (state.nextIndex >= nodes.length - 1 ? 'null' : nodes[state.nextIndex].value);
+        }
+
+        function clearCodeHighlight() {
+            for (let i = 1; i <= 16; i++) {
+                document.getElementById('line' + i).classList.remove('highlight');
+            }
+        }
+
+        function highlightCode(lineNumbers) {
+            clearCodeHighlight();
+            lineNumbers.forEach(num => {
+                document.getElementById('line' + num).classList.add('highlight');
+            });
+        }
+
+        function startAnimation() {
+            reset();
+            state.isAnimating = true;
+            document.getElementById('nextBtn').disabled = false;
+            highlightCode([1, 2]);
+            document.getElementById('stepInfo').textContent = '初始化：prev = null, current = head(1)';
+        }
+
+        function nextStep() {
+            if (!state.isAnimating) return;
+
+            state.step++;
+
+            // 第1轮循环
+            if (state.step === 1) {
+                state.loopIndex = 1;
+                highlightCode([4]);
+                document.getElementById('stepInfo').textContent = '第1轮循环开始：current = 1';
+            } else if (state.step === 2) {
+                state.nextIndex = 1;
+                highlightCode([6]);
+                document.getElementById('stepInfo').textContent = '保存 next = current.next (节点2)';
+            } else if (state.step === 3) {
+                state.arrows = [
+                    { from: 1, to: 2, reversed: false },
+                    { from: 2, to: 3, reversed: false }
+                ];
+                highlightCode([9]);
+                document.getElementById('stepInfo').textContent = '反转指向：1.next = null';
+                setTimeout(() => render(), 100);
+            } else if (state.step === 4) {
+                state.prevIndex = 0;
+                highlightCode([12]);
+                document.getElementById('stepInfo').textContent = '移动 prev 指针到节点1';
+            } else if (state.step === 5) {
+                state.currentIndex = 1;
+                state.nextIndex = -1;
+                highlightCode([13]);
+                document.getElementById('stepInfo').textContent = '移动 current 指针到节点2';
+            }
+            // 第2轮循环
+            else if (state.step === 6) {
+                state.loopIndex = 2;
+                highlightCode([4]);
+                document.getElementById('stepInfo').textContent = '第2轮循环开始：current = 2';
+            } else if (state.step === 7) {
+                state.nextIndex = 2;
+                highlightCode([6]);
+                document.getElementById('stepInfo').textContent = '保存 next = current.next (节点3)';
+            } else if (state.step === 8) {
+                state.arrows = [
+                    { from: 1, to: 0, reversed: true },
+                    { from: 2, to: 3, reversed: false }
+                ];
+                highlightCode([9]);
+                document.getElementById('stepInfo').textContent = '反转指向：2.next = 1';
+                setTimeout(() => render(), 100);
+            } else if (state.step === 9) {
+                state.prevIndex = 1;
+                highlightCode([12]);
+                document.getElementById('stepInfo').textContent = '移动 prev 指针到节点2';
+            } else if (state.step === 10) {
+                state.currentIndex = 2;
+                state.nextIndex = -1;
+                highlightCode([13]);
+                document.getElementById('stepInfo').textContent = '移动 current 指针到节点3';
+            }
+            // 第3轮循环
+            else if (state.step === 11) {
+                state.loopIndex = 3;
+                highlightCode([4]);
+                document.getElementById('stepInfo').textContent = '第3轮循环开始：current = 3';
+            } else if (state.step === 12) {
+                state.nextIndex = 3;
+                highlightCode([6]);
+                document.getElementById('stepInfo').textContent = '保存 next = current.next (null)';
+            } else if (state.step === 13) {
+                state.arrows = [
+                    { from: 1, to: 0, reversed: true },
+                    { from: 2, to: 1, reversed: true }
+                ];
+                highlightCode([9]);
+                document.getElementById('stepInfo').textContent = '反转指向：3.next = 2';
+                setTimeout(() => render(), 100);
+            } else if (state.step === 14) {
+                state.prevIndex = 2;
+                highlightCode([12]);
+                document.getElementById('stepInfo').textContent = '移动 prev 指针到节点3';
+            } else if (state.step === 15) {
+                state.currentIndex = 3;
+                state.nextIndex = -1;
+                highlightCode([13]);
+                document.getElementById('stepInfo').textContent = '移动 current 指针到 null';
+            } else if (state.step === 16) {
+                highlightCode([4]);
+                document.getElementById('stepInfo').textContent = '循环结束：current = null';
+            } else if (state.step === 17) {
+                highlightCode([16]);
+                document.getElementById('stepInfo').textContent = '返回 prev (节点3) - 反转完成！';
+                document.getElementById('nextBtn').disabled = true;
+            }
+
+            updateInfo();
+            render();
+        }
+
+        // 初始化
+        reset();
+    </script>
+</body>
+</html>
