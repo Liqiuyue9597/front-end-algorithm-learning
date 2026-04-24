@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二叉树前序遍历 - 栈执行过程动画</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tree-section {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .stack-section {
+            flex: 0 0 250px;
+            min-width: 250px;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            color: #667eea;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .tree-container {
+            position: relative;
+            height: 400px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .tree-node {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            transition: all 0.5s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .tree-node.current {
+            background: #ff6b6b;
+            border-color: #ff6b6b;
+            color: white;
+            transform: scale(1.3);
+            box-shadow: 0 8px 16px rgba(255,107,107,0.4);
+            animation: pulse 1s infinite;
+        }
+
+        .tree-node.visited {
+            background: #51cf66;
+            border-color: #51cf66;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1.3); }
+            50% { transform: scale(1.4); }
+        }
+
+        .tree-edge {
+            position: absolute;
+            height: 2px;
+            background: #667eea;
+            transform-origin: left center;
+            z-index: 1;
+        }
+
+        .stack-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stack-label {
+            text-align: center;
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 15px;
+            padding: 8px;
+            background: white;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .stack-items {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .stack-item {
+            padding: 15px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .stack-item.popping {
+            animation: slideOut 0.3s ease-out forwards;
+        }
+
+        @keyframes slideOut {
+            to {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+        }
+
+        .stack-top {
+            background: #ffd43b;
+            border-color: #fcc419;
+            color: #333;
+        }
+
+        .info-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .result-value {
+            color: #51cf66;
+        }
+
+        .code-section {
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 20px;
+            color: #f8f8f2;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        .code-line {
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .code-line.highlight {
+            background: rgba(255, 107, 107, 0.3);
+            border-left: 3px solid #ff6b6b;
+            padding-left: 5px;
+        }
+
+        .code-comment {
+            color: #6a9955;
+        }
+
+        .code-keyword {
+            color: #c586c0;
+        }
+
+        .code-function {
+            color: #dcdcaa;
+        }
+
+        .code-string {
+            color: #ce9178;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid;
+        }
+
+        .legend-current {
+            background: #ff6b6b;
+            border-color: #ff6b6b;
+        }
+
+        .legend-visited {
+            background: #51cf66;
+            border-color: #51cf66;
+        }
+
+        .legend-unvisited {
+            background: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌳 二叉树前序遍历</h1>
+        <p class="subtitle">栈执行过程动画演示 (根 → 左 → 右)</p>
+
+        <div class="controls">
+            <button class="btn-primary" id="startBtn" onclick="start()">开始演示</button>
+            <button class="btn-primary" id="nextBtn" onclick="nextStep()" disabled>下一步</button>
+            <button class="btn-secondary" id="resetBtn" onclick="reset()">重置</button>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-label">当前步骤</div>
+                    <div class="info-value" id="stepInfo">准备开始</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">当前操作</div>
+                    <div class="info-value" id="actionInfo">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">遍历结果</div>
+                    <div class="info-value result-value" id="resultInfo">[]</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="tree-section">
+                <div class="section-title">二叉树结构</div>
+                <div class="tree-container" id="treeContainer">
+                    <!-- 树节点和边将通过 JavaScript 动态生成 -->
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box legend-current"></div>
+                        <span>当前节点</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box legend-visited"></div>
+                        <span>已访问</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box legend-unvisited"></div>
+                        <span>未访问</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stack-section">
+                <div class="section-title">栈状态</div>
+                <div class="stack-container">
+                    <div class="stack-label">栈顶 ↓</div>
+                    <div class="stack-items" id="stackItems">
+                        <!-- 栈元素将通过 JavaScript 动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-section">
+            <div class="code-line" id="code-1"><span class="code-keyword">while</span> (stack.length > <span class="code-string">0</span>) {</div>
+            <div class="code-line" id="code-2">&nbsp;&nbsp;<span class="code-keyword">const</span> node = stack.<span class="code-function">pop</span>(); <span class="code-comment">// 出栈</span></div>
+            <div class="code-line" id="code-3">&nbsp;&nbsp;result.<span class="code-function">push</span>(node.val); <span class="code-comment">// 访问节点</span></div>
+            <div class="code-line" id="code-4">&nbsp;&nbsp;<span class="code-keyword">if</span> (node.right) stack.<span class="code-function">push</span>(node.right); <span class="code-comment">// 先压右</span></div>
+            <div class="code-line" id="code-5">&nbsp;&nbsp;<span class="code-keyword">if</span> (node.left) stack.<span class="code-function">push</span>(node.left); <span class="code-comment">// 再压左</span></div>
+            <div class="code-line" id="code-6">}</div>
+        </div>
+    </div>
+
+    <script>
+        // 树结构定义
+        const tree = {
+            val: 1,
+            left: {
+                val: 2,
+                left: { val: 4, left: null, right: null },
+                right: { val: 5, left: null, right: null }
+            },
+            right: {
+                val: 3,
+                left: null,
+                right: null
+            }
+        };
+
+        // 节点位置配置
+        const nodePositions = {
+            1: { x: 200, y: 30 },
+            2: { x: 100, y: 130 },
+            3: { x: 300, y: 130 },
+            4: { x: 50, y: 230 },
+            5: { x: 150, y: 230 }
+        };
+
+        let stack = [];
+        let result = [];
+        let visited = new Set();
+        let currentNode = null;
+        let stepIndex = 0;
+        let steps = [];
+
+        // 初始化树的显示
+        function initTree() {
+            const container = document.getElementById('treeContainer');
+            container.innerHTML = '';
+
+            // 绘制边
+            drawEdge(1, 2);
+            drawEdge(1, 3);
+            drawEdge(2, 4);
+            drawEdge(2, 5);
+
+            // 绘制节点
+            [1, 2, 3, 4, 5].forEach(val => {
+                const node = document.createElement('div');
+                node.className = 'tree-node';
+                node.id = `node-${val}`;
+                node.textContent = val;
+                node.style.left = nodePositions[val].x + 'px';
+                node.style.top = nodePositions[val].y + 'px';
+                container.appendChild(node);
+            });
+        }
+
+        function drawEdge(from, to) {
+            const container = document.getElementById('treeContainer');
+            const pos1 = nodePositions[from];
+            const pos2 = nodePositions[to];
+
+            const x1 = pos1.x + 25;
+            const y1 = pos1.y + 25;
+            const x2 = pos2.x + 25;
+            const y2 = pos2.y + 25;
+
+            const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+            const edge = document.createElement('div');
+            edge.className = 'tree-edge';
+            edge.style.width = length + 'px';
+            edge.style.left = x1 + 'px';
+            edge.style.top = y1 + 'px';
+            edge.style.transform = `rotate(${angle}deg)`;
+            container.appendChild(edge);
+        }
+
+        // 生成执行步骤
+        function generateSteps() {
+            steps = [];
+            const tempStack = [tree];
+            const tempResult = [];
+            const tempVisited = new Set();
+
+            steps.push({
+                action: '初始化',
+                description: '根节点 1 入栈',
+                stack: [1],
+                result: [],
+                current: null,
+                visited: new Set(),
+                codeLine: null
+            });
+
+            while (tempStack.length > 0) {
+                const node = tempStack.pop();
+                const stackVals = tempStack.map(n => n.val);
+
+                steps.push({
+                    action: '出栈',
+                    description: `节点 ${node.val} 出栈`,
+                    stack: [...stackVals],
+                    result: [...tempResult],
+                    current: node.val,
+                    visited: new Set(tempVisited),
+                    codeLine: 2
+                });
+
+                tempResult.push(node.val);
+                tempVisited.add(node.val);
+
+                steps.push({
+                    action: '访问',
+                    description: `访问节点 ${node.val}，加入结果`,
+                    stack: [...stackVals],
+                    result: [...tempResult],
+                    current: node.val,
+                    visited: new Set(tempVisited),
+                    codeLine: 3
+                });
+
+                if (node.right) {
+                    tempStack.push(node.right);
+                    steps.push({
+                        action: '压栈',
+                        description: `右子节点 ${node.right.val} 入栈`,
+                        stack: tempStack.map(n => n.val),
+                        result: [...tempResult],
+                        current: node.val,
+                        visited: new Set(tempVisited),
+                        codeLine: 4
+                    });
+                }
+
+                if (node.left) {
+                    tempStack.push(node.left);
+                    steps.push({
+                        action: '压栈',
+                        description: `左子节点 ${node.left.val} 入栈`,
+                        stack: tempStack.map(n => n.val),
+                        result: [...tempResult],
+                        current: node.val,
+                        visited: new Set(tempVisited),
+                        codeLine: 5
+                    });
+                }
+            }
+
+            steps.push({
+                action: '完成',
+                description: '遍历完成',
+                stack: [],
+                result: [...tempResult],
+                current: null,
+                visited: new Set(tempVisited),
+                codeLine: null
+            });
+        }
+
+        function start() {
+            reset();
+            generateSteps();
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = false;
+            updateDisplay();
+        }
+
+        function nextStep() {
+            if (stepIndex < steps.length) {
+                const step = steps[stepIndex];
+                
+                // 更新显示
+                updateTreeDisplay(step);
+                updateStackDisplay(step);
+                updateInfo(step);
+                highlightCode(step.codeLine);
+
+                stepIndex++;
+
+                if (stepIndex >= steps.length) {
+                    document.getElementById('nextBtn').disabled = true;
+                }
+            }
+        }
+
+        function updateTreeDisplay(step) {
+            // 清除所有节点状态
+            document.querySelectorAll('.tree-node').forEach(node => {
+                node.classList.remove('current', 'visited');
+            });
+
+            // 设置已访问节点
+            step.visited.forEach(val => {
+                const node = document.getElementById(`node-${val}`);
+                if (node) node.classList.add('visited');
+            });
+
+            // 设置当前节点
+            if (step.current) {
+                const node = document.getElementById(`node-${step.current}`);
+                if (node) {
+                    node.classList.remove('visited');
+                    node.classList.add('current');
+                }
+            }
+        }
+
+        function updateStackDisplay(step) {
+            const container = document.getElementById('stackItems');
+            container.innerHTML = '';
+
+            step.stack.forEach((val, index) => {
+                const item = document.createElement('div');
+                item.className = 'stack-item';
+                if (index === step.stack.length - 1) {
+                    item.classList.add('stack-top');
+                }
+                item.textContent = val;
+                container.appendChild(item);
+            });
+        }
+
+        function updateInfo(step) {
+            document.getElementById('stepInfo').textContent = `第 ${stepIndex + 1} 步`;
+            document.getElementById('actionInfo').textContent = step.description;
+            document.getElementById('resultInfo').textContent = `[${step.result.join(', ')}]`;
+        }
+
+        function highlightCode(lineNumber) {
+            document.querySelectorAll('.code-line').forEach(line => {
+                line.classList.remove('highlight');
+            });
+
+            if (lineNumber) {
+                const line = document.getElementById(`code-${lineNumber}`);
+                if (line) line.classList.add('highlight');
+            }
+        }
+
+        function updateDisplay() {
+            if (stepIndex === 0) {
+                document.getElementById('stepInfo').textContent = '准备开始';
+                document.getElementById('actionInfo').textContent = '-';
+                document.getElementById('resultInfo').textContent = '[]';
+            }
+        }
+
+        function reset() {
+            stepIndex = 0;
+            stack = [];
+            result = [];
+            visited = new Set();
+            currentNode = null;
+            steps = [];
+
+            initTree();
+            document.getElementById('stackItems').innerHTML = '';
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('nextBtn').disabled = true;
+            
+            updateDisplay();
+            highlightCode(null);
+        }
+
+        // 初始化
+        initTree();
+    </script>
+</body>
+</html>
