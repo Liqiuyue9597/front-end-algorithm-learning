@@ -1,0 +1,9 @@
+{
+  "name": "algo-think",
+  "version": "1.0.0",
+  "description": "Algorithm thinking coach - guides step-by-step problem-solving reasoning instead of dumping solutions",
+  "author": {
+    "name": "elissali"
+  },
+  "keywords": ["algorithm", "leetcode", "thinking", "problem-solving", "教学", "思路"]
+}
