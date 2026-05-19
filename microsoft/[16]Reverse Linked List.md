@@ -50,3 +50,54 @@ var reverseList = function(head) {
     return prev;
 };
 ```
+
+---
+
+### ⚠️ `prev` 初始化的反例对照卡
+
+**核心概念**：在 JS 链表里，**`null` 是"没有节点"**，**`new ListNode(...)` 是"一个真实节点"**——这两个东西完全不同，混用会出错。
+
+#### 反例对照表
+
+| 写法 | `prev` 的值 | 第一轮 `cur.next = prev` 后 `1.next` 是 | 结果 |
+|---|---|---|---|
+| ✅ `let prev = null;` | `null` | `null` | **正确**：原 head 反转后变成尾巴，`next` 是 `null`，符合链表约定 |
+| ❌ `let prev;` | `undefined` | `undefined` | **错误**：尾节点 `next === undefined`，`undefined !== null`，LeetCode 遍历时会报 `Cannot read properties of undefined` |
+| ❌ `let prev = new ListNode(null);` | `{val:null, next:null}` | 一个真实节点 | **严重错误**：造了个垃圾节点，被反转进结果尾部，链表多出一个 `val:null` 的节点 |
+| ❌ `let prev = 0;` / `false` / `{}` | 任意非 null 值 | 该值本身 | **错误**：尾节点 `next` 不是 `null`，违反链表约定 |
+
+#### 三个关键概念
+
+```
+null              → "没有节点"(链表的尽头)
+undefined         → "变量没赋值"(JS 默认行为,不是程序员的"空"语义)
+new ListNode(x)   → "造了一个节点出来"(实体对象)
+```
+
+**`null` 是唯一表达"链表尽头"的值。**
+
+#### 为什么 dummy 用 `new ListNode(0)` 没事？
+
+| 写法 | 创造了节点 | 节点结局 |
+|---|---|---|
+| `prev = new ListNode(null)` | ✓ | **被反转进结果链表** ← 污染 |
+| `dummy = new ListNode(0, head)` | ✓ | 最后 `return dummy.next` **跳过它** ← 干净 |
+
+**dummy 的精髓是"用完即弃"**——它只是临时锚点，最终通过 `return dummy.next` 把它抛弃，不进入结果。
+
+#### 写链表代码时永远问自己两个问题
+
+1. **这个变量代表"节点"还是"空"？**
+   - 节点 → 用 `new ListNode(...)`
+   - 空   → 用 `null`（**永远不要用 `undefined` 或 `new ListNode(null)`**）
+
+2. **这个变量最终会不会进入结果链表？**
+   - 会   → 必须是题目要求的真实数据
+   - 不会 → 用 `dummy.next` 跳过它
+
+#### 一句话记忆
+
+> **`prev = null` 不是凑巧——它精准对应了"原 head 反转后变成尾巴，next 必须是 null"这一事实。**
+>
+> 任何其他初始值都会让节点 1 的 `next` 指向错误的东西。
+

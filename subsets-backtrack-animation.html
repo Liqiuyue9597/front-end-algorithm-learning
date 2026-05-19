@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>子集 Subsets - 回溯法动画</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 14px;
+            padding: 12px 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            width: 100%;
+            max-width: 1600px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        /* === 顶栏:标题 + 输入 + 控件 + 图例 一行 === */
+        .topbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .topbar h1 {
+            color: #667eea;
+            font-size: 1.2em;
+            white-space: nowrap;
+        }
+        .topbar .input-display {
+            font-size: 0.95em;
+            color: #444;
+            white-space: nowrap;
+        }
+        .topbar .input-display code {
+            background: #f0f2ff;
+            padding: 3px 10px;
+            border-radius: 6px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .topbar .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .topbar .legend {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: #555;
+            margin-left: auto;
+        }
+
+        button {
+            padding: 6px 14px;
+            font-size: 13px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f7f8fc;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        .speed-control label {
+            color: #555;
+        }
+        .speed-control input { width: 90px; }
+
+        /* === 主区:左(树) + 右(状态 & 代码) === */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .panel {
+            background: #f7f8fc;
+            border-radius: 10px;
+            padding: 10px 12px;
+            border: 2px solid #e6e9f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .panel-title {
+            font-size: 0.95em;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 6px;
+            border-bottom: 2px solid #e6e9f5;
+            padding-bottom: 4px;
+            flex-shrink: 0;
+        }
+
+        /* 决策树 */
+        .tree-wrapper {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        svg.tree { display: block; }
+        .tree-node {
+            transition: all 0.4s ease;
+        }
+        .tree-node circle {
+            fill: #ffffff;
+            stroke: #c5cae9;
+            stroke-width: 2;
+            transition: all 0.4s ease;
+        }
+        .tree-node.visited circle {
+            fill: #e3f2fd;
+            stroke: #42a5f5;
+        }
+        .tree-node.active circle {
+            fill: #ffd54f;
+            stroke: #f57c00;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 8px rgba(245,124,0,0.6));
+        }
+        .tree-node.recorded circle {
+            fill: #a5d6a7;
+            stroke: #2e7d32;
+        }
+        .tree-node text {
+            font-size: 13px;
+            font-weight: bold;
+            fill: #333;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+        }
+        .tree-node.active text {
+            fill: #5d2e00;
+        }
+        .tree-edge {
+            stroke: #c5cae9;
+            stroke-width: 2;
+            fill: none;
+            transition: stroke 0.4s ease, stroke-width 0.4s ease;
+        }
+        .tree-edge.active {
+            stroke: #f57c00;
+            stroke-width: 3;
+        }
+        .tree-edge.traversed {
+            stroke: #81c784;
+            stroke-width: 2.5;
+        }
+
+        /* 右侧状态 */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .state-section {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .state-label {
+            color: #666;
+            font-size: 0.8em;
+            margin-bottom: 3px;
+        }
+        .path-box, .result-box {
+            background: white;
+            border: 2px solid #e6e9f5;
+            border-radius: 6px;
+            padding: 6px;
+            min-height: 36px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+        .result-box {
+            max-height: 90px;
+            overflow-y: auto;
+        }
+        .chip {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 5px;
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+            animation: popin 0.3s ease;
+        }
+        .chip.ghost {
+            animation: popout 0.3s ease;
+        }
+        @keyframes popin {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes popout {
+            from { transform: scale(1); opacity: 1; }
+            to { transform: scale(0); opacity: 0; }
+        }
+        .subset-chip {
+            background: #a5d6a7;
+            color: #1b5e20;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid #66bb6a;
+        }
+        .subset-chip.highlight {
+            background: #ffd54f;
+            color: #5d2e00;
+            border-color: #f57c00;
+            animation: flash 0.6s ease;
+        }
+        @keyframes flash {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); box-shadow: 0 0 12px rgba(245,124,0,0.6); }
+        }
+
+        /* for 循环进度条 */
+        .loop-box {
+            background: white;
+            border: 2px solid #e6e9f5;
+            border-radius: 6px;
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            min-height: 36px;
+        }
+        .loop-box .lbl {
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+        .loop-cell {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 5px;
+            border: 2px solid #e6e9f5;
+            background: #f7f8fc;
+            min-width: 36px;
+            transition: all 0.3s ease;
+        }
+        .loop-cell .idx {
+            font-size: 10px;
+            color: #999;
+            font-family: 'Courier New', monospace;
+        }
+        .loop-cell .val {
+            font-weight: bold;
+            color: #333;
+        }
+        .loop-cell.done {
+            background: #e8f5e9;
+            border-color: #81c784;
+            opacity: 0.75;
+        }
+        .loop-cell.done .val { color: #2e7d32; }
+        .loop-cell.current {
+            background: #ffd54f;
+            border-color: #f57c00;
+            transform: scale(1.12);
+            box-shadow: 0 0 10px rgba(245,124,0,0.4);
+        }
+        .loop-cell.current .val { color: #5d2e00; }
+        .loop-cell.pending {
+            background: #fff;
+            border-color: #c5cae9;
+        }
+        .loop-cell.skipped {
+            background: #eeeeee;
+            border-color: #bdbdbd;
+            opacity: 0.45;
+            text-decoration: line-through;
+        }
+        .loop-arrow {
+            color: #f57c00;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* 调用栈 */
+        .call-stack {
+            background: white;
+            border: 2px solid #e6e9f5;
+            border-radius: 6px;
+            padding: 6px;
+            min-height: 70px;
+            max-height: 110px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 3px;
+        }
+        .stack-frame {
+            background: #ede7f6;
+            border-left: 3px solid #9575cd;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #4527a0;
+            animation: slidein 0.25s ease;
+        }
+        .stack-frame.top {
+            background: #fff3cd;
+            border-left-color: #f57c00;
+            color: #5d2e00;
+            font-weight: bold;
+        }
+        @keyframes slidein {
+            from { transform: translateX(-10px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* 代码显示 */
+        .code-panel {
+            background: #1e1e2e;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #cdd6f4;
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+        .code-line {
+            padding: 1px 8px;
+            border-radius: 3px;
+            white-space: pre;
+            transition: background 0.3s;
+        }
+        .code-line.highlight {
+            background: rgba(245, 124, 0, 0.3);
+            border-left: 3px solid #f57c00;
+        }
+        .kw { color: #f38ba8; }
+        .fn { color: #89b4fa; }
+        .str { color: #a6e3a1; }
+        .num { color: #fab387; }
+        .cmt { color: #6c7086; font-style: italic; }
+
+        /* 说明信息 */
+        .status-bar {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 4px solid #f57c00;
+            padding: 6px 12px;
+            border-radius: 6px;
+            color: #5d2e00;
+            font-size: 13px;
+            font-weight: 500;
+            min-height: 34px;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #c5cae9;
+        }
+        .legend-dot.visited { background: #e3f2fd; border-color: #42a5f5; }
+        .legend-dot.active { background: #ffd54f; border-color: #f57c00; }
+        .legend-dot.recorded { background: #a5d6a7; border-color: #2e7d32; }
+        .legend-dot.unvisited { background: white; }
+
+        @media (max-width: 1100px) {
+            .main-layout { grid-template-columns: 1fr; }
+            html, body { overflow: auto; }
+            .container { height: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <h1>🌳 Subsets 回溯动画</h1>
+            <div class="input-display">输入:<code>nums = [1, 2, 3]</code></div>
+            <div class="controls">
+                <button id="btn-play">▶ 播放</button>
+                <button id="btn-step">⏭ 单步</button>
+                <button id="btn-pause" class="secondary">⏸ 暂停</button>
+                <button id="btn-reset" class="secondary">↻ 重置</button>
+                <div class="speed-control">
+                    <label>速度</label>
+                    <input type="range" id="speed" min="200" max="2000" value="900" step="100">
+                    <span id="speed-label">900ms</span>
+                </div>
+            </div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot unvisited"></div>未访问</div>
+                <div class="legend-item"><div class="legend-dot active"></div>当前</div>
+                <div class="legend-item"><div class="legend-dot recorded"></div>已收录</div>
+                <div class="legend-item"><div class="legend-dot visited"></div>已返回</div>
+            </div>
+        </div>
+
+        <div class="status-bar" id="status">点击「播放」或「单步」开始演示</div>
+
+        <div class="main-layout">
+            <!-- 决策树 -->
+            <div class="panel">
+                <div class="panel-title">🌳 决策树（每个节点 = 一个子集）</div>
+                <div class="tree-wrapper">
+                    <svg class="tree" id="tree" width="760" height="500"></svg>
+                </div>
+            </div>
+
+            <!-- 右列:状态 + 代码 -->
+            <div class="right-col">
+                <div class="panel" style="flex:1;">
+                    <div class="panel-title">📊 运行状态</div>
+                    <div class="state-section">
+                        <div class="state-label">当前 path:</div>
+                        <div class="path-box" id="path-box"></div>
+                    </div>
+                    <div class="state-section" style="margin-top:6px;">
+                        <div class="state-label">栈顶 for 循环进度 <span style="color:#999;font-weight:normal;">（绿=已处理完 / 黄=正在处理 / 白=还没轮到 / 灰=start 之前被跳过）</span>：</div>
+                        <div class="loop-box" id="loop-box"></div>
+                    </div>
+                    <div class="state-section" style="margin-top:6px;">
+                        <div class="state-label">调用栈:</div>
+                        <div class="call-stack" id="stack-box"></div>
+                    </div>
+                    <div class="state-section" style="margin-top:6px; flex:1; min-height:0;">
+                        <div class="state-label">result:</div>
+                        <div class="result-box" id="result-box" style="flex:1;"></div>
+                    </div>
+                </div>
+
+                <!-- 代码 -->
+                <div class="code-panel" id="code">
+<div class="code-line" data-line="1"><span class="kw">function</span> <span class="fn">backtrack</span>(start) {</div>
+<div class="code-line" data-line="2">  result.<span class="fn">push</span>([...path]);       <span class="cmt">// ① 收录</span></div>
+<div class="code-line" data-line="3">  <span class="kw">for</span> (<span class="kw">let</span> i = start; i &lt; nums.length; i++) {</div>
+<div class="code-line" data-line="4">    path.<span class="fn">push</span>(nums[i]);           <span class="cmt">// ② 选择</span></div>
+<div class="code-line" data-line="5">    <span class="fn">backtrack</span>(i + <span class="num">1</span>);            <span class="cmt">// ③ 递归</span></div>
+<div class="code-line" data-line="6">    path.<span class="fn">pop</span>();                   <span class="cmt">// ④ 撤销</span></div>
+<div class="code-line" data-line="7">  }</div>
+<div class="code-line" data-line="8">}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ===================== 数据与预生成步骤 =====================
+const nums = [1, 2, 3];
+
+/**
+ * 决策树节点结构:
+ *  id: 唯一 id
+ *  path: 到达此节点的路径(即该节点代表的子集)
+ *  start: 进入此节点时的 start 参数
+ *  parent: 父节点 id
+ *  children: 子节点 id 数组
+ *  x, y: 绘图坐标
+ */
+const nodes = [];
+const edges = []; // {from, to}
+
+function buildTree(path, start, parentId) {
+    const id = nodes.length;
+    const node = { id, path: [...path], start, parent: parentId, children: [] };
+    nodes.push(node);
+    if (parentId !== null) {
+        nodes[parentId].children.push(id);
+        edges.push({ from: parentId, to: id });
+    }
+    for (let i = start; i < nums.length; i++) {
+        path.push(nums[i]);
+        const childId = buildTree(path, i + 1, id);
+        path.pop();
+    }
+    return id;
+}
+buildTree([], 0, null);
+
+// 计算坐标 - 使用子树宽度布局
+const LEAF_W = 75;
+const LEVEL_H = 65;
+function assignWidth(id) {
+    const n = nodes[id];
+    if (n.children.length === 0) { n.width = LEAF_W; return LEAF_W; }
+    n.width = n.children.reduce((s, c) => s + assignWidth(c), 0);
+    return n.width;
+}
+assignWidth(0);
+function assignXY(id, left, depth) {
+    const n = nodes[id];
+    n.x = left + n.width / 2;
+    n.y = 35 + depth * LEVEL_H;
+    let cursor = left;
+    for (const c of n.children) {
+        assignXY(c, cursor, depth + 1);
+        cursor += nodes[c].width;
+    }
+}
+assignXY(0, 20, 0);
+
+// ===================== 生成执行步骤 =====================
+/**
+ * 每一步 step: {
+ *   type: 'enter' | 'record' | 'choose' | 'return' | 'undo' | 'done',
+ *   nodeId, path, result, stack, codeLine, desc
+ * }
+ */
+const steps = [];
+const resultSnapshot = [];
+const stackSnapshot = []; // 元素:{nodeId, start, i}   i 表示当前 for 循环进行到的位置(-1 表示还没开始)
+
+function snap(obj) {
+    return {
+        type: obj.type,
+        nodeId: obj.nodeId,
+        path: [...obj.path],
+        result: resultSnapshot.map(s => [...s]),
+        stack: stackSnapshot.map(f => ({...f})),
+        codeLine: obj.codeLine,
+        desc: obj.desc,
+        highlightSubsetIdx: obj.highlightSubsetIdx ?? null
+    };
+}
+
+function simulate(nodeId) {
+    const node = nodes[nodeId];
+    const path = node.path;
+    const start = node.start;
+
+    // 进入函数:此时控制权刚交到函数,下一行将执行的是第 1 行(函数体入口)
+    stackSnapshot.push({ nodeId, start, i: -1, phase: 'enter' });
+    steps.push(snap({
+        type: 'enter', nodeId, path, codeLine: 1,
+        desc: `进入 backtrack(${start})，path = [${path.join(',') || ''}]；即将执行第 1 行`
+    }));
+
+    // 即将执行第 2 行:收录 result
+    steps.push(snap({
+        type: 'pre-record', nodeId, path, codeLine: 2,
+        desc: `即将执行第 2 行：result.push([...path])，把当前 path 收录到 result`
+    }));
+
+    // 收录完成(已执行第 2 行),下一行将执行 for 判断(第 3 行)
+    resultSnapshot.push([...path]);
+    const recordedIdx = resultSnapshot.length - 1;
+    stackSnapshot[stackSnapshot.length - 1].phase = 'before-for';
+    steps.push(snap({
+        type: 'record', nodeId, path, codeLine: 3,
+        desc: `已收录 [${path.join(',')}]；即将执行第 3 行的 for 循环判断（i = start = ${start}）`,
+        highlightSubsetIdx: recordedIdx
+    }));
+
+    // for 循环
+    for (let i = start; i < nums.length; i++) {
+        const top = stackSnapshot[stackSnapshot.length - 1];
+        top.i = i;
+        top.phase = 'for-check';
+
+        // for 条件通过,下一行将执行 path.push(第 4 行)
+        steps.push(snap({
+            type: 'for-check', nodeId, path, codeLine: 4,
+            desc: `for 第 ${i - start + 1} 轮：i = ${i} < ${nums.length} 成立；即将执行第 4 行 path.push(nums[${i}] = ${nums[i]})`
+        }));
+
+        // push
+        path.push(nums[i]);
+        top.phase = 'pushed';
+        // 已执行 push,下一行将执行递归调用(第 5 行)
+        steps.push(snap({
+            type: 'choose', nodeId, path, codeLine: 5,
+            desc: `已选择 nums[${i}] = ${nums[i]}，path = [${path.join(',')}]；即将执行第 5 行：backtrack(${i + 1})`
+        }));
+
+        // 递归前进到子节点:视角切到子节点,即将执行子函数第 1 行
+        const childId = node.children[i - start];
+        top.phase = 'recursing';
+        steps.push(snap({
+            type: 'enter-child', nodeId: childId, path, codeLine: 1,
+            desc: `调用 backtrack(${i + 1})，进入子节点；即将执行子函数第 1 行`
+        }));
+
+        simulate(childId);
+
+        // 回到当前层:子函数已返回,下一行将执行 path.pop(第 6 行)
+        top.phase = 'returned';
+        steps.push(snap({
+            type: 'return', nodeId, path, codeLine: 6,
+            desc: `从 backtrack(${i + 1}) 返回（仍在 for 第 ${i - start + 1} 轮，i 还是 ${i}）；即将执行第 6 行：path.pop()`
+        }));
+
+        // pop
+        path.pop();
+        top.phase = 'popped';
+        // 已 pop,下一行将回到 for 的下一轮判断(第 3 行)或结束(第 7 行)
+        steps.push(snap({
+            type: 'undo', nodeId, path, codeLine: 7,
+            desc: `已撤销 ${nums[i]}，path 恢复为 [${path.join(',')}]；即将回到第 3 行 for 判断（i 将自增为 ${i + 1}）`
+        }));
+    }
+
+    // for 循环结束,即将执行第 8 行 }(函数返回)
+    stackSnapshot[stackSnapshot.length - 1].phase = 'for-done';
+    stackSnapshot[stackSnapshot.length - 1].i = nums.length;
+    steps.push(snap({
+        type: 'for-end', nodeId, path, codeLine: 8,
+        desc: `for 循环结束（i = ${nums.length} 已越界）；即将执行第 8 行：backtrack(${start}) 返回上一层`
+    }));
+    stackSnapshot.pop();
+}
+
+simulate(0);
+steps.push(snap({
+    type: 'done', nodeId: null, path: [], codeLine: null,
+    desc: `✅ 完成！共生成 ${resultSnapshot.length} 个子集 = 2^${nums.length}`
+}));
+
+// ===================== 渲染 =====================
+const svg = document.getElementById('tree');
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// 动态调整 svg 宽高
+const maxX = Math.max(...nodes.map(n => n.x)) + 40;
+const maxY = Math.max(...nodes.map(n => n.y)) + 40;
+svg.setAttribute('width', maxX);
+svg.setAttribute('height', maxY);
+
+// 绘制边
+const edgeEls = {};
+for (const e of edges) {
+    const a = nodes[e.from], b = nodes[e.to];
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', a.x);
+    line.setAttribute('y1', a.y);
+    line.setAttribute('x2', b.x);
+    line.setAttribute('y2', b.y);
+    line.setAttribute('class', 'tree-edge');
+    svg.appendChild(line);
+    edgeEls[`${e.from}-${e.to}`] = line;
+}
+
+// 绘制节点
+const nodeEls = {};
+for (const n of nodes) {
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('class', 'tree-node');
+    g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+
+    const c = document.createElementNS(SVG_NS, 'circle');
+    c.setAttribute('r', 22);
+    g.appendChild(c);
+
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.textContent = `[${n.path.join(',')}]`;
+    g.appendChild(t);
+
+    svg.appendChild(g);
+    nodeEls[n.id] = g;
+}
+
+// ===================== 播放控制 =====================
+let currentStep = -1;
+let playing = false;
+let timer = null;
+let speed = 900;
+
+const pathBox = document.getElementById('path-box');
+const resultBox = document.getElementById('result-box');
+const stackBox = document.getElementById('stack-box');
+const loopBox = document.getElementById('loop-box');
+const statusBar = document.getElementById('status');
+const codeLines = document.querySelectorAll('.code-line');
+
+// 节点状态:0=未访问, 1=已访问(active), 2=已收录, 3=已返回
+const nodeStatus = {};
+
+function renderStep(idx) {
+    if (idx < 0 || idx >= steps.length) return;
+    const s = steps[idx];
+
+    // 状态文字
+    statusBar.textContent = s.desc;
+
+    // 代码行高亮
+    codeLines.forEach(el => el.classList.remove('highlight'));
+    if (s.codeLine) {
+        const el = document.querySelector(`.code-line[data-line="${s.codeLine}"]`);
+        if (el) el.classList.add('highlight');
+    }
+
+    // path 显示
+    pathBox.innerHTML = '';
+    if (s.path.length === 0) {
+        pathBox.innerHTML = '<span style="color:#999;font-style:italic;">空</span>';
+    } else {
+        s.path.forEach(v => {
+            const c = document.createElement('span');
+            c.className = 'chip';
+            c.textContent = v;
+            pathBox.appendChild(c);
+        });
+    }
+
+    // result 显示
+    resultBox.innerHTML = '';
+    if (s.result.length === 0) {
+        resultBox.innerHTML = '<span style="color:#999;font-style:italic;">空</span>';
+    } else {
+        s.result.forEach((sub, i) => {
+            const c = document.createElement('span');
+            c.className = 'subset-chip';
+            if (i === s.highlightSubsetIdx) c.classList.add('highlight');
+            c.textContent = `[${sub.join(',')}]`;
+            resultBox.appendChild(c);
+        });
+    }
+
+    // 调用栈显示
+    stackBox.innerHTML = '';
+    s.stack.forEach((f, i) => {
+        const d = document.createElement('div');
+        d.className = 'stack-frame' + (i === s.stack.length - 1 ? ' top' : '');
+        // 动态构造 label:显示 start / 当前 i / 所处阶段
+        const iTxt = f.i < 0 ? '—' : (f.i >= nums.length ? '已越界' : f.i);
+        const phaseMap = {
+            'enter':     '刚进入',
+            'before-for':'已收录,待进 for',
+            'for-check': `for 第 ${f.i - f.start + 1} 轮:判断通过`,
+            'pushed':    `已 push nums[${f.i}]=${nums[f.i]}`,
+            'recursing': `递归 backtrack(${f.i + 1}) 中`,
+            'returned':  `子函数返回,待 pop`,
+            'popped':    `已 pop,i 将++`,
+            'for-done':  'for 结束'
+        };
+        const phaseTxt = phaseMap[f.phase] || '';
+        d.innerHTML = `<div><b>backtrack(${f.start})</b> <span style="color:#888">start=${f.start}, i=${iTxt}</span></div><div style="font-size:11px;color:#6b5500">${phaseTxt}</div>`;
+        stackBox.appendChild(d);
+    });
+
+    // for 循环进度条显示(基于栈顶帧)
+    loopBox.innerHTML = '';
+    const topFrame = s.stack[s.stack.length - 1];
+    if (!topFrame) {
+        loopBox.innerHTML = '<span style="color:#999;font-style:italic;">无活动调用</span>';
+    } else {
+        const startLabel = document.createElement('span');
+        startLabel.className = 'lbl';
+        startLabel.innerHTML = `start=<b>${topFrame.start}</b>, i=<b style="color:#f57c00">${topFrame.i < 0 ? '—' : (topFrame.i >= nums.length ? '已越界' : topFrame.i)}</b>`;
+        loopBox.appendChild(startLabel);
+
+        // 每个 nums 元素:start 之前=skipped, i 之前=done, i=current, i 之后=pending
+        nums.forEach((v, idx) => {
+            const cell = document.createElement('span');
+            cell.className = 'loop-cell';
+            if (idx < topFrame.start) cell.classList.add('skipped');
+            else if (topFrame.i < 0 || topFrame.phase === 'enter' || topFrame.phase === 'before-for') {
+                // 还没进 for 循环
+                cell.classList.add('pending');
+            } else if (idx < topFrame.i) cell.classList.add('done');
+            else if (idx === topFrame.i) {
+                // 如果 for-done 且 i 越界了,其实所有都是 done
+                cell.classList.add('current');
+            } else cell.classList.add('pending');
+
+            // for-done 越界时:topFrame.i === nums.length,则所有 idx >= start 都应是 done
+            if (topFrame.phase === 'for-done') {
+                cell.className = 'loop-cell' + (idx < topFrame.start ? ' skipped' : ' done');
+            }
+
+            cell.innerHTML = `<span class="idx">[${idx}]</span><span class="val">${v}</span>`;
+            loopBox.appendChild(cell);
+        });
+    }
+
+    // 树节点状态推进
+    // 重置所有
+    Object.values(nodeEls).forEach(el => {
+        el.classList.remove('active', 'recorded', 'visited');
+    });
+    Object.values(edgeEls).forEach(el => {
+        el.classList.remove('active', 'traversed');
+    });
+
+    // 根据当前 step 前(含)的历史推断节点状态
+    const status = {};
+    for (let k = 0; k <= idx; k++) {
+        const st = steps[k];
+        if (st.type === 'enter' && st.nodeId != null) status[st.nodeId] = 'active';
+        else if (st.type === 'record' && st.nodeId != null) status[st.nodeId] = 'recorded';
+        else if (st.type === 'for-end' && st.nodeId != null) status[st.nodeId] = 'visited';
+    }
+    // 当前 active 节点单独处理
+    if (s.nodeId != null) {
+        Object.entries(status).forEach(([id, v]) => {
+            if (+id !== s.nodeId) {
+                // 只保留 recorded/visited 状态
+                if (v === 'recorded') nodeEls[id].classList.add('recorded');
+                else if (v === 'visited') nodeEls[id].classList.add('visited');
+                else if (v === 'active') nodeEls[id].classList.add('recorded'); // 已进入但当前不是焦点
+            }
+        });
+        // 当前节点高亮
+        nodeEls[s.nodeId].classList.remove('recorded', 'visited');
+        nodeEls[s.nodeId].classList.add('active');
+    } else {
+        Object.entries(status).forEach(([id, v]) => {
+            if (v === 'recorded') nodeEls[id].classList.add('recorded');
+            else if (v === 'visited') nodeEls[id].classList.add('visited');
+        });
+    }
+
+    // 边高亮:从调用栈推导活动路径
+    for (let k = 0; k < s.stack.length - 1; k++) {
+        const from = s.stack[k].nodeId;
+        const to = s.stack[k + 1].nodeId;
+        const key = `${from}-${to}`;
+        if (edgeEls[key]) edgeEls[key].classList.add('active');
+    }
+    // 最后一条边:如果当前不在栈顶节点上(比如 choose 进入子节点的瞬间)
+    if (s.stack.length > 0 && s.nodeId != null) {
+        const topNode = s.stack[s.stack.length - 1].nodeId;
+        if (topNode !== s.nodeId) {
+            const key = `${topNode}-${s.nodeId}`;
+            if (edgeEls[key]) edgeEls[key].classList.add('active');
+        }
+    }
+}
+
+function nextStep() {
+    if (currentStep >= steps.length - 1) {
+        pause();
+        return;
+    }
+    currentStep++;
+    renderStep(currentStep);
+}
+
+function play() {
+    if (playing) return;
+    if (currentStep >= steps.length - 1) reset();
+    playing = true;
+    timer = setInterval(() => {
+        if (currentStep >= steps.length - 1) { pause(); return; }
+        nextStep();
+    }, speed);
+}
+function pause() {
+    playing = false;
+    if (timer) { clearInterval(timer); timer = null; }
+}
+function reset() {
+    pause();
+    currentStep = -1;
+    pathBox.innerHTML = '<span style="color:#999;font-style:italic;">空</span>';
+    resultBox.innerHTML = '<span style="color:#999;font-style:italic;">空</span>';
+    stackBox.innerHTML = '';
+    loopBox.innerHTML = '<span style="color:#999;font-style:italic;">无活动调用</span>';
+    statusBar.textContent = '点击「播放」或「单步」开始演示';
+    Object.values(nodeEls).forEach(el => el.classList.remove('active', 'recorded', 'visited'));
+    Object.values(edgeEls).forEach(el => el.classList.remove('active', 'traversed'));
+    codeLines.forEach(el => el.classList.remove('highlight'));
+}
+
+document.getElementById('btn-play').addEventListener('click', play);
+document.getElementById('btn-step').addEventListener('click', () => { pause(); nextStep(); });
+document.getElementById('btn-pause').addEventListener('click', pause);
+document.getElementById('btn-reset').addEventListener('click', reset);
+document.getElementById('speed').addEventListener('input', e => {
+    speed = +e.target.value;
+    document.getElementById('speed-label').textContent = speed + 'ms';
+    if (playing) { pause(); play(); }
+});
+
+// 初始化
+reset();
+</script>
+</body>
+</html>

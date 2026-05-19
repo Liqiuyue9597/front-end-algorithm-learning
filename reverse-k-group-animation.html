@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>LC 25 - K 个一组反转链表 动画</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+  }
+  .container {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 1300px;
+    margin: 0 auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  h1 {
+    text-align: center;
+    color: #667eea;
+    margin-bottom: 10px;
+    font-size: 1.8em;
+  }
+  .subtitle {
+    text-align: center;
+    color: #888;
+    margin-bottom: 25px;
+    font-size: 0.95em;
+  }
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #667eea;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform .1s, background .2s;
+  }
+  button:hover:not(:disabled) {
+    background: #5568d3;
+    transform: translateY(-1px);
+  }
+  button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+  button.secondary { background: #94a3b8; }
+  button.secondary:hover:not(:disabled) { background: #7a8a9c; }
+  button.primary { background: #10b981; }
+  button.primary:hover:not(:disabled) { background: #059669; }
+
+  .speed {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 12px;
+  }
+  .speed input { width: 100px; }
+
+  .stage {
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 30px 20px 60px;
+    margin-bottom: 20px;
+    position: relative;
+    min-height: 380px;
+    overflow-x: auto;
+  }
+
+  .nodes {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    position: relative;
+    min-width: 900px;
+    margin-top: 130px;
+    padding: 0 30px;
+  }
+
+  .node {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    color: #475569;
+    flex-shrink: 0;
+    transition: all .35s ease;
+    z-index: 2;
+  }
+  .node.dummy {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
+    font-size: 12px;
+  }
+  .node.in-group {
+    background: #dbeafe;
+    border-color: #3b82f6;
+    color: #1e40af;
+  }
+  .node.reversing {
+    background: #fde68a;
+    border-color: #f59e0b;
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(245,158,11,.5);
+  }
+  .node.done {
+    background: #d1fae5;
+    border-color: #10b981;
+    color: #065f46;
+  }
+
+  /* 节点上方的指针标签 */
+  .pointer {
+    position: absolute;
+    top: -36px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ef4444;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 5;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+    letter-spacing: .2px;
+  }
+  .pointer::after {
+    content: '▼';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ef4444;
+    font-size: 9px;
+  }
+  .pointer.prev   { background: #8b5cf6; }
+  .pointer.prev::after   { color: #8b5cf6; }
+  .pointer.cur    { background: #ef4444; }
+  .pointer.cur::after    { color: #ef4444; }
+  .pointer.next   { background: #f97316; }
+  .pointer.next::after   { color: #f97316; }
+  .pointer.kth    { background: #14b8a6; }
+  .pointer.kth::after    { color: #14b8a6; }
+  .pointer.gs     { background: #3b82f6; }
+  .pointer.gs::after     { color: #3b82f6; }
+  .pointer.ngs    { background: #ec4899; }
+  .pointer.ngs::after    { color: #ec4899; }
+  .pointer.pgt    { background: #6366f1; }
+  .pointer.pgt::after    { color: #6366f1; }
+
+  /* 多个指针时堆叠（同节点 / 相邻节点错层都用同一套层级） */
+  .pointer.stack-2 { top: -60px; }
+  .pointer.stack-3 { top: -84px; }
+  .pointer.stack-4 { top: -108px; }
+
+  /* 箭头 SVG 容器 */
+  .arrows {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .step-info {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 18px 22px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+  }
+  .step-info .label {
+    font-size: 12px;
+    opacity: .8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .step-info .text {
+    font-size: 16px;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+
+  .vars {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .var-card {
+    background: #f1f5f9;
+    border-left: 4px solid #94a3b8;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .var-card .name {
+    font-weight: 700;
+    color: #475569;
+    font-family: monospace;
+    margin-bottom: 2px;
+  }
+  .var-card .val {
+    font-family: monospace;
+    color: #1e293b;
+    font-size: 14px;
+  }
+  .var-card.pgt  { border-color: #6366f1; }
+  .var-card.gs   { border-color: #3b82f6; }
+  .var-card.kth  { border-color: #14b8a6; }
+  .var-card.ngs  { border-color: #ec4899; }
+  .var-card.prev { border-color: #8b5cf6; }
+  .var-card.cur  { border-color: #ef4444; }
+
+  .code-pane {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+  .code-pane .line {
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: background .2s;
+  }
+  .code-pane .line.hl {
+    background: rgba(251, 191, 36, .25);
+    border-left: 3px solid #fbbf24;
+    padding-left: 12px;
+    margin-left: -8px;
+  }
+  .code-pane .comment { color: #64748b; }
+  .code-pane .kw      { color: #f472b6; }
+  .code-pane .var     { color: #60a5fa; }
+  .code-pane .str     { color: #a3e635; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid;
+  }
+
+  .progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: #64748b;
+  }
+  .progress-bar {
+    flex: 1;
+    max-width: 400px;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transition: width .3s;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔄 LC 25 — K 个一组反转链表</h1>
+  <p class="subtitle">输入 <code>1→2→3→4→5</code>，k=2 ｜ 期望输出 <code>2→1→4→3→5</code></p>
+
+  <div class="controls">
+    <button id="btn-prev" class="secondary">⬅ 上一步</button>
+    <button id="btn-play" class="primary">▶ 自动播放</button>
+    <button id="btn-next">下一步 ➡</button>
+    <button id="btn-reset" class="secondary">🔄 重置</button>
+    <div class="speed">
+      <label>速度</label>
+      <input type="range" id="speed" min="500" max="3000" value="1500" step="250">
+      <span id="speed-val">1.5s</span>
+    </div>
+  </div>
+
+  <div class="step-info">
+    <div class="label">当前步骤 <span id="step-num">0</span> / <span id="step-total">0</span></div>
+    <div class="text" id="step-text">点击「下一步」开始</div>
+  </div>
+
+  <div class="stage">
+    <div class="nodes" id="nodes"></div>
+    <svg class="arrows" id="arrows"></svg>
+  </div>
+
+  <div class="vars" id="vars"></div>
+
+  <div class="code-pane" id="code"></div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="border-color:#f59e0b;background:#fef3c7;"></span>dummy</div>
+    <div class="legend-item"><span class="legend-dot" style="border-color:#3b82f6;background:#dbeafe;"></span>本组待处理</div>
+    <div class="legend-item"><span class="legend-dot" style="border-color:#f59e0b;background:#fde68a;"></span>正在反转</div>
+    <div class="legend-item"><span class="legend-dot" style="border-color:#10b981;background:#d1fae5;"></span>已处理</div>
+    <div class="legend-item"><span style="color:#6366f1;font-weight:700;">prevGroupTail</span></div>
+    <div class="legend-item"><span style="color:#3b82f6;font-weight:700;">groupStart</span></div>
+    <div class="legend-item"><span style="color:#14b8a6;font-weight:700;">kth</span></div>
+    <div class="legend-item"><span style="color:#ec4899;font-weight:700;">nextGroupStart</span></div>
+    <div class="legend-item"><span style="color:#8b5cf6;font-weight:700;">prev</span></div>
+    <div class="legend-item"><span style="color:#ef4444;font-weight:700;">cur</span></div>
+  </div>
+
+  <div class="progress">
+    <span id="prog-label">进度</span>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   节点定义：用对象池 + id，方便修改 next 时画箭头
+================================================================ */
+const POOL = {
+  dummy: { id: 'dummy', val: 'dummy', next: '1' },
+  '1':   { id: '1',     val: 1,       next: '2' },
+  '2':   { id: '2',     val: 2,       next: '3' },
+  '3':   { id: '3',     val: 3,       next: '4' },
+  '4':   { id: '4',     val: 4,       next: '5' },
+  '5':   { id: '5',     val: 5,       next: null },
+};
+
+/* 渲染顺序：固定的物理位置，方便观察 next 指针的弯曲 */
+const PHYSICAL_ORDER = ['dummy', '1', '2', '3', '4', '5'];
+
+/* ================================================================
+   STEPS：每一步描述
+   每步包含：
+     - title: 简短标题
+     - desc:  长文字解释
+     - codeLine: 高亮哪一行代码
+     - pointers: { name: nodeId, color, stack: 0|1|2 }
+     - groupHighlight: 哪些 id 标蓝(本组)
+     - reversingId:    哪个 id 标黄(正在反转)
+     - doneIds:        哪些 id 标绿(已处理完)
+     - links: 覆盖 next 指针 { from: id, to: id|null }   不传则用 POOL 中的
+     - vars: { 变量名: 显示值 }
+================================================================ */
+
+/* 我们手动构造一组步骤来演示"第一组 [1,2] 的反转 + 接缝" */
+
+const STEPS = [
+  /* ============ 第 0 步：起始状态 ============ */
+  {
+    title: '初始状态',
+    desc: '链表 dummy → 1 → 2 → 3 → 4 → 5。<br>初始化 prevGroupTail = dummy（用作"上一组的尾"，方便接缝）。',
+    codeLine: 1,
+    pointers: [{ name: 'prevGroupTail', target: 'dummy', color: 'pgt' }],
+    vars: { prevGroupTail: 'dummy' },
+  },
+
+  /* ============ 第 1 步：探测 kth ============ */
+  {
+    title: '步骤 A：探测从 prevGroupTail 走 k=2 步',
+    desc: 'kth 从 prevGroupTail (dummy) 出发，走 k 步。<br>走完后 kth = 节点 2，**这一组够 k 个**，可以反转。',
+    codeLine: 5,
+    pointers: [
+      { name: 'prevGroupTail', target: 'dummy', color: 'pgt' },
+      { name: 'kth',           target: '2',     color: 'kth' },
+    ],
+    groupHighlight: ['1', '2'],
+    vars: { prevGroupTail: 'dummy', kth: '节点 2' },
+  },
+
+  /* ============ 第 2 步：存 groupStart 和 nextGroupStart ============ */
+  {
+    title: '步骤 B：在反转前先存好 4 个关键节点',
+    desc: '<strong style="color:#fbbf24">这一步是关键！</strong><br>反转一旦开始，next 指针会被改，所以必须**先存**：<br>• groupStart = prevGroupTail.next = 节点 1（这一组的开头）<br>• nextGroupStart = kth.next = 节点 3（下一组的起点）',
+    codeLine: 11,
+    pointers: [
+      { name: 'prevGroupTail',   target: 'dummy', color: 'pgt' },
+      { name: 'groupStart',      target: '1',     color: 'gs', stack: 1 },
+      { name: 'kth',             target: '2',     color: 'kth' },
+      { name: 'nextGroupStart',  target: '3',     color: 'ngs' },
+    ],
+    groupHighlight: ['1', '2'],
+    vars: {
+      prevGroupTail: 'dummy',
+      groupStart: '节点 1',
+      kth: '节点 2',
+      nextGroupStart: '节点 3',
+    },
+  },
+
+  /* ============ 第 3 步：反转初始化 ============ */
+  {
+    title: '步骤 C：反转开始 — 初始化 prev=null, cur=groupStart',
+    desc: '反转使用 LC 206 的"四步法"：存→反→移→移。<br>初始化 prev=null（新尾的 next 将变成 null），cur 从 groupStart=节点1 开始。',
+    codeLine: 16,
+    pointers: [
+      { name: 'prevGroupTail',   target: 'dummy', color: 'pgt' },
+      { name: 'groupStart',      target: '1',     color: 'gs', stack: 1 },
+      { name: 'kth',             target: '2',     color: 'kth' },
+      { name: 'nextGroupStart',  target: '3',     color: 'ngs' },
+      { name: 'cur',             target: '1',     color: 'cur', stack: 2 },
+    ],
+    groupHighlight: ['1', '2'],
+    reversingId: '1',
+    vars: {
+      prev: 'null',
+      cur: '节点 1',
+    },
+  },
+
+  /* ============ 第 4 步：反转第 1 次循环 ============ */
+  {
+    title: '反转 第 1 轮：1.next = null',
+    desc: '当前 cur=1：<br>• next = cur.next = 节点 2 (先存)<br>• cur.next = prev = null  ← <strong style="color:#fbbf24">节点 1 的 next 现在是 null!</strong><br>• prev = cur = 1<br>• cur = next = 2',
+    codeLine: 18,
+    pointers: [
+      { name: 'prevGroupTail',   target: 'dummy', color: 'pgt' },
+      { name: 'groupStart',      target: '1',     color: 'gs', stack: 1 },
+      { name: 'kth',             target: '2',     color: 'kth' },
+      { name: 'nextGroupStart',  target: '3',     color: 'ngs' },
+      { name: 'prev',            target: '1',     color: 'prev', stack: 2 },
+      { name: 'cur',             target: '2',     color: 'cur', stack: 2 },
+    ],
+    groupHighlight: ['1', '2'],
+    reversingId: '1',
+    /* 修改 next：1.next = null（断开） */
+    links: { '1': null },
+    vars: {
+      prev: '节点 1',
+      cur: '节点 2',
+      '1.next': 'null  ⚠️ 断开了',
+    },
+  },
+
+  /* ============ 第 5 步：反转第 2 次循环 ============ */
+  {
+    title: '反转 第 2 轮：2.next = 1',
+    desc: '当前 cur=2：<br>• next = cur.next = 节点 3 (先存)<br>• cur.next = prev = 节点 1  ← <strong style="color:#10b981">节点 2 现在指向 1，反转生效！</strong><br>• prev = cur = 2<br>• cur = next = 3<br><br>检查 cur === nextGroupStart（都是节点 3）→ 退出反转循环',
+    codeLine: 19,
+    pointers: [
+      { name: 'prevGroupTail',   target: 'dummy', color: 'pgt' },
+      { name: 'groupStart',      target: '1',     color: 'gs', stack: 1 },
+      { name: 'kth',             target: '2',     color: 'kth' },
+      { name: 'nextGroupStart',  target: '3',     color: 'ngs' },
+      { name: 'prev',            target: '2',     color: 'prev', stack: 2 },
+      { name: 'cur',             target: '3',     color: 'cur', stack: 2 },
+    ],
+    groupHighlight: ['1', '2'],
+    reversingId: '2',
+    links: { '1': null, '2': '1' },   // 1→null, 2→1
+    vars: {
+      prev: '节点 2 (反转后的新头)',
+      cur: '节点 3 (= nextGroupStart, 停止)',
+      '1.next': 'null',
+      '2.next': '节点 1',
+    },
+  },
+
+  /* ============ 第 6 步：反转完成的中间状态（拼接前） ============ */
+  {
+    title: '反转完成！但链表是"断开"的 ⚠️',
+    desc: '反转完毕，但<strong style="color:#ef4444">链表现在是断的</strong>：<br>• dummy 仍然指向节点 1（旧的）<br>• 反转后的小段：2 → 1 → null<br>• 后半段：3 → 4 → 5 (孤立)<br><br>⬇⬇⬇ <strong>所以接下来的两行接缝代码至关重要！</strong>',
+    codeLine: 25,
+    pointers: [
+      { name: 'prevGroupTail',   target: 'dummy', color: 'pgt' },
+      { name: 'groupStart',      target: '1',     color: 'gs', stack: 1 },
+      { name: 'kth',             target: '2',     color: 'kth' },
+      { name: 'nextGroupStart',  target: '3',     color: 'ngs' },
+    ],
+    groupHighlight: ['1', '2'],
+    links: { '1': null, '2': '1' },
+    vars: {
+      'dummy.next': '节点 1（应该改成节点 2!）',
+      '1.next': 'null（应该改成节点 3!）',
+      'prev (新头)': '节点 2',
+      'groupStart (新尾)': '节点 1',
+    },
+  },
+
+  /* ============ 第 7 步：左接缝 ============ */
+  {
+    title: '步骤 D₁：左接缝 prevGroupTail.next = kth',
+    desc: '<strong style="color:#10b981">左接缝</strong>：把"上一组的尾"接到这一组的<strong>新头</strong>。<br><code>dummy.next = 节点 2</code><br><br>现在 dummy → 2 → 1 → null，但 1 还没接到 3。',
+    codeLine: 27,
+    pointers: [
+      { name: 'prevGroupTail',   target: 'dummy', color: 'pgt' },
+      { name: 'groupStart',      target: '1',     color: 'gs', stack: 1 },
+      { name: 'kth',             target: '2',     color: 'kth' },
+      { name: 'nextGroupStart',  target: '3',     color: 'ngs' },
+    ],
+    groupHighlight: ['1', '2'],
+    links: { 'dummy': '2', '1': null, '2': '1' },
+    vars: {
+      'dummy.next': '节点 2 ✓ (左接缝完成)',
+      '1.next': 'null（还没修，下一步）',
+    },
+  },
+
+  /* ============ 第 8 步：右接缝 ============ */
+  {
+    title: '步骤 D₂：右接缝 groupStart.next = nextGroupStart',
+    desc: '<strong style="color:#10b981">右接缝</strong>：把这一组的<strong>新尾</strong>接到下一组起点。<br><code>节点 1.next = 节点 3</code><br><br>注意：反转前的 groupStart=1，反转后变成了"新尾"（因为反转把头尾对调了）。',
+    codeLine: 28,
+    pointers: [
+      { name: 'prevGroupTail',   target: 'dummy', color: 'pgt' },
+      { name: 'groupStart',      target: '1',     color: 'gs', stack: 1 },
+      { name: 'kth',             target: '2',     color: 'kth' },
+      { name: 'nextGroupStart',  target: '3',     color: 'ngs' },
+    ],
+    groupHighlight: ['1', '2'],
+    links: { 'dummy': '2', '1': '3', '2': '1' },
+    vars: {
+      'dummy.next': '节点 2 ✓',
+      '1.next': '节点 3 ✓ (右接缝完成)',
+      '链表': 'dummy → 2 → 1 → 3 → 4 → 5  完美!',
+    },
+  },
+
+  /* ============ 第 9 步：更新 prevGroupTail，进入下一轮 ============ */
+  {
+    title: '步骤 E：更新 prevGroupTail = groupStart',
+    desc: '<strong>核心心智</strong>：反转前的 groupStart（节点 1）= 反转后的新尾 = 下一轮的 prevGroupTail。<br><br>本组处理完，节点 1、2 标绿（已处理）。下一轮要从节点 1 出发探测。',
+    codeLine: 30,
+    pointers: [
+      { name: 'prevGroupTail', target: '1', color: 'pgt' },
+    ],
+    doneIds: ['1', '2'],
+    links: { 'dummy': '2', '1': '3', '2': '1' },
+    vars: {
+      prevGroupTail: '节点 1（这一组的新尾，等于下一轮的"上一组尾"）',
+    },
+  },
+
+  /* ============ 第 10 步：第二组开始探测 ============ */
+  {
+    title: '【第二轮】探测 kth',
+    desc: '从 prevGroupTail = 节点 1 出发走 k=2 步：1 → 3 → 4，所以 kth = 节点 4。<br>这一组够 k 个，可以反转 [3, 4]。',
+    codeLine: 5,
+    pointers: [
+      { name: 'prevGroupTail', target: '1', color: 'pgt' },
+      { name: 'kth',           target: '4', color: 'kth' },
+    ],
+    doneIds: ['1', '2'],
+    groupHighlight: ['3', '4'],
+    links: { 'dummy': '2', '1': '3', '2': '1' },
+    vars: { prevGroupTail: '节点 1', kth: '节点 4' },
+  },
+
+  /* ============ 第 11 步：第二组反转完成 + 接缝 ============ */
+  {
+    title: '【第二轮】反转 + 接缝',
+    desc: '反转 [3, 4] → 4 → 3。<br>接缝：<br>• 左接缝：1.next = 4<br>• 右接缝：3.next = 5<br>• 更新 prevGroupTail = 节点 3<br><br>链表：dummy → 2 → 1 → 4 → 3 → 5 ✓',
+    codeLine: 30,
+    pointers: [
+      { name: 'prevGroupTail', target: '3', color: 'pgt' },
+    ],
+    doneIds: ['1', '2', '3', '4'],
+    links: { 'dummy': '2', '1': '4', '2': '1', '3': '5', '4': '3' },
+    vars: {
+      prevGroupTail: '节点 3',
+      '链表': 'dummy → 2 → 1 → 4 → 3 → 5',
+    },
+  },
+
+  /* ============ 第 12 步：第三组探测失败 → break ============ */
+  {
+    title: '【第三轮】探测失败 — 走不够 k 步',
+    desc: 'kth 从节点 3 走 k=2 步：3 → 5 → null，<strong style="color:#ef4444">kth 变成 null</strong>。<br>说明剩下不够 k 个，<code>if (kth === null) break</code> 退出循环。<br>剩下的节点保持原样。',
+    codeLine: 9,
+    pointers: [
+      { name: 'prevGroupTail', target: '3', color: 'pgt' },
+      { name: 'kth',           target: 'null', color: 'kth' },
+    ],
+    doneIds: ['1', '2', '3', '4'],
+    links: { 'dummy': '2', '1': '4', '2': '1', '3': '5', '4': '3' },
+    vars: { kth: 'null', '操作': 'break 退出 while' },
+  },
+
+  /* ============ 第 13 步：完成 ============ */
+  {
+    title: '✅ 完成！返回 dummy.next',
+    desc: '最终链表：<strong style="color:#10b981">2 → 1 → 4 → 3 → 5</strong><br>返回 dummy.next = 节点 2。',
+    codeLine: 33,
+    doneIds: ['1', '2', '3', '4', '5'],
+    links: { 'dummy': '2', '1': '4', '2': '1', '3': '5', '4': '3' },
+    vars: { '返回值': 'dummy.next = 节点 2', '完整链表': '2 → 1 → 4 → 3 → 5' },
+  },
+];
+
+/* ================================================================
+   代码块（用于代码高亮联动）
+================================================================ */
+const CODE_LINES = [
+  '<span class="kw">var</span> reverseKGroup = <span class="kw">function</span> (head, k) {',
+  '  <span class="kw">const</span> dummy = <span class="kw">new</span> ListNode(0, head);',
+  '  <span class="kw">let</span> prevGroupTail = dummy;',
+  '',
+  '  <span class="kw">while</span> (<span class="kw">true</span>) {',
+  '    <span class="comment">// A. 探测 k 步</span>',
+  '    <span class="kw">let</span> kth = prevGroupTail;',
+  '    <span class="kw">for</span> (<span class="kw">let</span> i = 0; i &lt; k && kth !== <span class="kw">null</span>; i++) {',
+  '      kth = kth.next;',
+  '    }',
+  '    <span class="kw">if</span> (kth === <span class="kw">null</span>) <span class="kw">break</span>;',
+  '',
+  '    <span class="comment">// B. 先存 4 个关键节点</span>',
+  '    <span class="kw">const</span> groupStart = prevGroupTail.next;',
+  '    <span class="kw">const</span> nextGroupStart = kth.next;',
+  '',
+  '    <span class="comment">// C. 反转 [groupStart ... kth]</span>',
+  '    <span class="kw">let</span> prev = <span class="kw">null</span>;',
+  '    <span class="kw">let</span> cur = groupStart;',
+  '    <span class="kw">while</span> (cur !== nextGroupStart) {',
+  '      <span class="kw">const</span> next = cur.next;',
+  '      cur.next = prev;',
+  '      prev = cur;',
+  '      cur = next;',
+  '    }',
+  '',
+  '    <span class="comment">// D. 接缝</span>',
+  '    prevGroupTail.next = kth;             <span class="comment">// 左接缝</span>',
+  '    groupStart.next = nextGroupStart;     <span class="comment">// 右接缝</span>',
+  '',
+  '    <span class="comment">// E. 更新</span>',
+  '    prevGroupTail = groupStart;',
+  '  }',
+  '',
+  '  <span class="kw">return</span> dummy.next;',
+  '};',
+];
+
+/* 步骤里的 codeLine 是 1-based 的（人类可读）→ 这里的 CODE_LINES 是 0-based */
+/* 注意：codeLine 1 对应"const dummy = ..." 这一行 */
+
+/* ================================================================
+   渲染
+================================================================ */
+const $nodes = document.getElementById('nodes');
+const $arrows = document.getElementById('arrows');
+const $stepNum = document.getElementById('step-num');
+const $stepTotal = document.getElementById('step-total');
+const $stepText = document.getElementById('step-text');
+const $vars = document.getElementById('vars');
+const $code = document.getElementById('code');
+const $progFill = document.getElementById('prog-fill');
+const $progLabel = document.getElementById('prog-label');
+
+let currentStep = -1;
+let playing = false;
+let playTimer = null;
+
+$stepTotal.textContent = STEPS.length;
+
+/* 一开始就把代码渲染好 */
+function renderCode(highlightLine) {
+  $code.innerHTML = CODE_LINES.map((line, i) => {
+    const cls = (i === highlightLine - 1) ? 'line hl' : 'line';
+    return `<div class="${cls}">${line || '&nbsp;'}</div>`;
+  }).join('');
+}
+
+/* 渲染节点（固定物理顺序） */
+function renderNodes() {
+  $nodes.innerHTML = '';
+  PHYSICAL_ORDER.forEach(id => {
+    const n = POOL[id];
+    const div = document.createElement('div');
+    div.className = 'node' + (id === 'dummy' ? ' dummy' : '');
+    div.id = `node-${id}`;
+    div.textContent = n.val;
+    $nodes.appendChild(div);
+  });
+}
+
+/* 计算两节点之间的箭头 path */
+function getNodeCenter(id) {
+  const el = document.getElementById(`node-${id}`);
+  if (!el) return null;
+  const stage = el.closest('.stage');
+  const rect = el.getBoundingClientRect();
+  const sRect = stage.getBoundingClientRect();
+  return {
+    x: rect.left - sRect.left + rect.width / 2,
+    y: rect.top - sRect.top + rect.height / 2,
+    w: rect.width,
+    h: rect.height,
+  };
+}
+
+/* 画箭头：从 fromId 指向 toId（toId 可以为 null = 指向空白） */
+function drawArrows(linksOverride) {
+  /* 先调整 stage 的高度 */
+  const stage = $nodes.closest('.stage');
+  $arrows.setAttribute('width', stage.scrollWidth);
+  $arrows.setAttribute('height', stage.offsetHeight);
+  $arrows.innerHTML = `
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+      </marker>
+      <marker id="arrow-new" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+      </marker>
+    </defs>
+  `;
+
+  /* 合并默认 next 和覆盖 */
+  const links = {};
+  PHYSICAL_ORDER.forEach(id => {
+    links[id] = POOL[id].next;
+  });
+  if (linksOverride) {
+    Object.entries(linksOverride).forEach(([k, v]) => {
+      links[k] = v;
+    });
+  }
+
+  /* 标记哪些是被修改过的（高亮成绿色） */
+  const modified = new Set(linksOverride ? Object.keys(linksOverride) : []);
+
+  Object.entries(links).forEach(([fromId, toId]) => {
+    if (toId === null || toId === undefined) {
+      /* 指向 null：画一个小的 "/" */
+      const c = getNodeCenter(fromId);
+      if (!c) return;
+      const x1 = c.x + c.w / 2 + 5;
+      const y1 = c.y;
+      const ns = 'http://www.w3.org/2000/svg';
+      const text = document.createElementNS(ns, 'text');
+      text.setAttribute('x', x1 + 25);
+      text.setAttribute('y', y1 + 5);
+      text.setAttribute('fill', modified.has(fromId) ? '#10b981' : '#94a3b8');
+      text.setAttribute('font-size', '14');
+      text.setAttribute('font-weight', 'bold');
+      text.textContent = '∅';
+      $arrows.appendChild(text);
+
+      /* 短横线指向 ∅ */
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', x1);
+      line.setAttribute('y1', y1);
+      line.setAttribute('x2', x1 + 18);
+      line.setAttribute('y2', y1);
+      line.setAttribute('stroke', modified.has(fromId) ? '#10b981' : '#94a3b8');
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('marker-end', modified.has(fromId) ? 'url(#arrow-new)' : 'url(#arrow)');
+      $arrows.appendChild(line);
+      return;
+    }
+
+    const from = getNodeCenter(fromId);
+    const to = getNodeCenter(toId);
+    if (!from || !to) return;
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const path = document.createElementNS(ns, 'path');
+
+    /* 同方向（指向右侧的相邻或较近节点）画直线
+       反方向或跨越多个：画弧线避免覆盖 */
+    const dx = to.x - from.x;
+    const sameRow = true;
+
+    let d;
+    if (Math.abs(dx) < from.w * 1.6 && dx > 0) {
+      /* 直线右指（默认 next） */
+      const x1 = from.x + from.w / 2;
+      const x2 = to.x - to.w / 2;
+      d = `M ${x1} ${from.y} L ${x2} ${to.y}`;
+    } else if (Math.abs(dx) < from.w * 1.6 && dx < 0) {
+      /* 直线左指（反向，比如 2→1）画在节点上方弧线 */
+      const x1 = from.x;
+      const x2 = to.x;
+      const y = from.y - from.h / 2 - 8;
+      d = `M ${x1 - from.w/4} ${from.y - from.h/2}
+           Q ${(x1+x2)/2} ${y - 30} ${x2 + to.w/4} ${to.y - to.h/2}`;
+    } else {
+      /* 跨越多个：底部弧线 */
+      const x1 = from.x;
+      const x2 = to.x;
+      const y = from.y + from.h / 2 + 30;
+      d = `M ${x1} ${from.y + from.h/2}
+           Q ${(x1+x2)/2} ${y + 30} ${x2} ${to.y + to.h/2}`;
+    }
+
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', modified.has(fromId) ? '#10b981' : '#94a3b8');
+    path.setAttribute('stroke-width', modified.has(fromId) ? '3' : '2');
+    path.setAttribute('marker-end', modified.has(fromId) ? 'url(#arrow-new)' : 'url(#arrow)');
+    $arrows.appendChild(path);
+  });
+}
+
+/* 渲染指针标签 */
+function renderPointers(pointers) {
+  /* 先清掉所有指针 */
+  document.querySelectorAll('.pointer').forEach(p => p.remove());
+
+  if (!pointers) return;
+
+  /* 按节点分组（同一节点上多个指针要堆叠） */
+  const grouped = {};
+  pointers.forEach(p => {
+    if (!grouped[p.target]) grouped[p.target] = [];
+    grouped[p.target].push(p);
+  });
+
+  /* 给每个节点分配一个 baseLevel：相邻节点错层，避免水平相撞
+     按 PHYSICAL_ORDER 顺序遍历，给"有标签的相邻节点"交替分配 0/1 */
+  const baseLevel = {};
+  let lastAssignedIdx = -2;     // 上一个有标签的节点索引
+  let lastAssignedLevel = -1;
+  PHYSICAL_ORDER.forEach((id, idx) => {
+    if (!grouped[id]) return;
+    if (idx - lastAssignedIdx === 1) {
+      /* 紧邻 → 切到另一层 */
+      baseLevel[id] = lastAssignedLevel === 0 ? 1 : 0;
+    } else {
+      baseLevel[id] = 0;
+    }
+    lastAssignedIdx = idx;
+    lastAssignedLevel = baseLevel[id];
+  });
+
+  Object.entries(grouped).forEach(([targetId, ptrs]) => {
+    if (targetId === 'null') {
+      /* null 指针特殊处理：在最右侧显示 */
+      const lastNode = document.getElementById(`node-5`);
+      if (!lastNode) return;
+      ptrs.forEach((p, i) => {
+        const tag = document.createElement('div');
+        tag.className = 'pointer ' + p.color + (i > 0 ? ' stack-' + (i+1) : '');
+        tag.textContent = p.name + ' = null';
+        tag.style.position = 'absolute';
+        tag.style.left = (lastNode.offsetLeft + lastNode.offsetWidth + 50) + 'px';
+        tag.style.top = (lastNode.offsetTop - 36 - i * 24) + 'px';
+        tag.style.transform = 'none';
+        $nodes.appendChild(tag);
+      });
+      return;
+    }
+
+    const node = document.getElementById(`node-${targetId}`);
+    if (!node) return;
+    const offset = baseLevel[targetId] || 0;   // 相邻节点错层偏移
+    ptrs.forEach((p, i) => {
+      const tag = document.createElement('div');
+      const stackIdx = i + offset;             // 加上错层偏移
+      tag.className = 'pointer ' + p.color + (stackIdx > 0 ? ' stack-' + (stackIdx + 1) : '');
+      tag.textContent = p.name;
+      node.appendChild(tag);
+    });
+  });
+}
+
+/* 渲染节点状态（颜色） */
+function renderNodeStates(step) {
+  PHYSICAL_ORDER.forEach(id => {
+    const el = document.getElementById(`node-${id}`);
+    if (!el) return;
+    el.classList.remove('in-group', 'reversing', 'done');
+    if (id === 'dummy') return;
+    if (step.doneIds && step.doneIds.includes(id)) {
+      el.classList.add('done');
+    } else if (step.reversingId === id) {
+      el.classList.add('reversing');
+    } else if (step.groupHighlight && step.groupHighlight.includes(id)) {
+      el.classList.add('in-group');
+    }
+  });
+}
+
+/* 渲染变量卡片 */
+function renderVars(vars) {
+  if (!vars) {
+    $vars.innerHTML = '';
+    return;
+  }
+  $vars.innerHTML = Object.entries(vars).map(([k, v]) => {
+    /* 根据变量名挑颜色 */
+    let cls = '';
+    if (k.includes('prevGroupTail')) cls = 'pgt';
+    else if (k.includes('groupStart')) cls = 'gs';
+    else if (k.includes('kth')) cls = 'kth';
+    else if (k.includes('nextGroupStart')) cls = 'ngs';
+    else if (k === 'prev') cls = 'prev';
+    else if (k === 'cur') cls = 'cur';
+    return `
+      <div class="var-card ${cls}">
+        <div class="name">${k}</div>
+        <div class="val">${v}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* 渲染整个步骤 */
+function renderStep(idx) {
+  if (idx < 0 || idx >= STEPS.length) return;
+  const step = STEPS[idx];
+  $stepNum.textContent = idx + 1;
+  $stepText.innerHTML = `<strong>${step.title}</strong><br>${step.desc}`;
+  renderNodeStates(step);
+  renderPointers(step.pointers);
+  drawArrows(step.links);
+  renderVars(step.vars);
+  renderCode(step.codeLine);
+
+  $progFill.style.width = ((idx + 1) / STEPS.length * 100) + '%';
+  $progLabel.textContent = `进度 ${idx + 1} / ${STEPS.length}`;
+
+  /* 按钮状态 */
+  document.getElementById('btn-prev').disabled = (idx === 0);
+  document.getElementById('btn-next').disabled = (idx === STEPS.length - 1);
+}
+
+/* ================================================================
+   控制
+================================================================ */
+function next() {
+  if (currentStep < STEPS.length - 1) {
+    currentStep++;
+    renderStep(currentStep);
+  } else {
+    stopPlay();
+  }
+}
+
+function prev() {
+  if (currentStep > 0) {
+    currentStep--;
+    renderStep(currentStep);
+  }
+}
+
+function reset() {
+  stopPlay();
+  currentStep = -1;
+  next();
+}
+
+function startPlay() {
+  if (currentStep >= STEPS.length - 1) {
+    currentStep = -1;
+  }
+  playing = true;
+  document.getElementById('btn-play').textContent = '⏸ 暂停';
+  document.getElementById('btn-play').classList.remove('primary');
+  const speed = +document.getElementById('speed').value;
+  playTimer = setInterval(() => {
+    if (currentStep < STEPS.length - 1) next();
+    else stopPlay();
+  }, speed);
+  next();   // 立即播一步
+}
+
+function stopPlay() {
+  playing = false;
+  document.getElementById('btn-play').textContent = '▶ 自动播放';
+  document.getElementById('btn-play').classList.add('primary');
+  if (playTimer) {
+    clearInterval(playTimer);
+    playTimer = null;
+  }
+}
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  stopPlay();
+  next();
+});
+document.getElementById('btn-prev').addEventListener('click', () => {
+  stopPlay();
+  prev();
+});
+document.getElementById('btn-reset').addEventListener('click', reset);
+document.getElementById('btn-play').addEventListener('click', () => {
+  if (playing) stopPlay();
+  else startPlay();
+});
+document.getElementById('speed').addEventListener('input', e => {
+  document.getElementById('speed-val').textContent = (e.target.value / 1000) + 's';
+  if (playing) {
+    stopPlay();
+    startPlay();
+  }
+});
+
+/* 窗口缩放时重画箭头 */
+window.addEventListener('resize', () => {
+  if (currentStep >= 0) renderStep(currentStep);
+});
+
+/* 初始化 */
+renderNodes();
+renderStep(0);
+currentStep = 0;
+</script>
+</body>
+</html>

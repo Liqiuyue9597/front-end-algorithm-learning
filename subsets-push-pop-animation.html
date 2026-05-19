@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>Subsets 回溯 - push/pop 动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 22px;
+    color: #f1f5f9;
+  }
+  .subtitle {
+    color: #94a3b8;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .top {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .panel {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #334155;
+  }
+  .panel-title {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* path 显示 */
+  .path-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 56px;
+  }
+  .path-bracket {
+    font-size: 32px;
+    color: #64748b;
+    font-weight: 300;
+  }
+  .path-item {
+    width: 44px;
+    height: 44px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  }
+  .path-item.pushing {
+    animation: pushIn 0.5s ease-out;
+    background: #10b981;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.6);
+  }
+  .path-item.popping {
+    animation: popOut 0.4s ease-in forwards;
+    background: #ef4444;
+  }
+  @keyframes pushIn {
+    0% { transform: translateY(-30px) scale(0.5); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  @keyframes popOut {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-40px) scale(0.3); opacity: 0; }
+  }
+
+  /* 代码区 */
+  .code-area {
+    font-family: "SF Mono", "Monaco", "Consolas", monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    background: #0f172a;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+  }
+  .code-line {
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    white-space: pre;
+  }
+  .code-line.active {
+    background: #fbbf24;
+    color: #0f172a;
+    font-weight: 600;
+  }
+  .code-comment { color: #64748b; }
+  .code-keyword { color: #c084fc; }
+  .code-string { color: #86efac; }
+  .code-num { color: #fbbf24; }
+
+  /* 决策树 */
+  .tree-panel {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #334155;
+    overflow-x: auto;
+  }
+  .tree {
+    position: relative;
+    min-height: 480px;
+    min-width: 900px;
+  }
+  .node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: #334155;
+    border: 2px solid #475569;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: "SF Mono", monospace;
+    transition: all 0.3s;
+    text-align: center;
+    min-width: 70px;
+    z-index: 2;
+  }
+  .node.visited {
+    background: #1e40af;
+    border-color: #3b82f6;
+  }
+  .node.active {
+    background: #f59e0b;
+    border-color: #fbbf24;
+    color: #0f172a;
+    font-weight: 600;
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.7);
+    transform: translate(-50%, -50%) scale(1.15);
+    z-index: 5;
+  }
+  .node.collected {
+    background: #059669;
+    border-color: #10b981;
+  }
+  .node-label {
+    font-size: 10px;
+    color: #cbd5e1;
+    margin-top: 2px;
+  }
+  .node.active .node-label,
+  .node.collected .node-label {
+    color: rgba(255,255,255,0.95);
+  }
+  svg.edges {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .edge {
+    stroke: #475569;
+    stroke-width: 1.5;
+    fill: none;
+    transition: all 0.3s;
+  }
+  .edge.active { stroke: #fbbf24; stroke-width: 2.5; }
+  .edge-label {
+    font-size: 10px;
+    fill: #94a3b8;
+    font-family: monospace;
+  }
+  .edge-label.skip { fill: #64748b; }
+  .edge-label.pick { fill: #34d399; }
+
+  /* 控制 */
+  .controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  button:hover:not(:disabled) {
+    background: #2563eb;
+    transform: translateY(-1px);
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.secondary { background: #475569; }
+  button.secondary:hover:not(:disabled) { background: #334155; }
+  .speed {
+    margin-left: auto;
+    color: #94a3b8;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  select {
+    background: #334155;
+    color: #e2e8f0;
+    border: 1px solid #475569;
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-size: 13px;
+  }
+
+  /* 操作日志 */
+  .log-panel {
+    margin-top: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .log-entry {
+    font-family: "SF Mono", monospace;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    border-left: 3px solid transparent;
+  }
+  .log-entry.push { border-left-color: #10b981; background: rgba(16, 185, 129, 0.1); }
+  .log-entry.pop { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+  .log-entry.collect { border-left-color: #fbbf24; background: rgba(251, 191, 36, 0.12); font-weight: 600; }
+  .log-entry.call { color: #94a3b8; }
+
+  /* 结果 */
+  .results {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 40px;
+  }
+  .result-item {
+    background: #059669;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 13px;
+    animation: fadeIn 0.4s;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Subsets 回溯动画 — 看清 push / pop 的配对</h1>
+  <div class="subtitle">
+    nums = [1, 2, 3] · 选/不选二元决策版 · 点击「下一步」逐步执行
+  </div>
+
+  <div class="top">
+    <!-- 左:path 与代码 -->
+    <div class="panel">
+      <div class="panel-title">当前 path(共享变量)</div>
+      <div class="path-display" id="pathDisplay">
+        <span class="path-bracket">[</span>
+        <span class="path-bracket">]</span>
+      </div>
+
+      <div class="panel-title" style="margin-top:18px">代码执行位置</div>
+      <div class="code-area" id="codeArea"></div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>push(选)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>pop(撤销)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>当前节点</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>已收集</div>
+      </div>
+    </div>
+
+    <!-- 右:操作日志 + 结果 -->
+    <div class="panel">
+      <div class="panel-title">操作日志</div>
+      <div class="log-panel" id="logPanel"></div>
+
+      <div class="panel-title" style="margin-top:14px">已收集子集</div>
+      <div class="results" id="results"></div>
+    </div>
+  </div>
+
+  <!-- 决策树 -->
+  <div class="tree-panel">
+    <div class="panel-title">决策树(每层对一个元素做"不选 / 选"决策)</div>
+    <div class="tree" id="tree">
+      <svg class="edges" id="edges"></svg>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="btnPrev">← 上一步</button>
+    <button id="btnNext">下一步 →</button>
+    <button id="btnPlay">▶ 自动播放</button>
+    <button id="btnReset" class="secondary">重置</button>
+    <div class="speed">
+      速度
+      <select id="speedSel">
+        <option value="1500">慢</option>
+        <option value="900" selected>正常</option>
+        <option value="500">快</option>
+        <option value="250">极快</option>
+      </select>
+      <span id="stepInfo" style="margin-left:10px"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// 1. 生成执行步骤(模拟选/不选版回溯)
+// ============================================
+const nums = [1, 2, 3];
+
+// 树节点位置(预先布局好,8 个叶子)
+// 树深度 4(i=0,1,2,3),叶子在 i=3 层
+// x 坐标:节点根据决策路径分布
+const treeLayout = {
+  // key: 路径字符串,如 "" "0" "1" "00" "01"...
+  // 0=不选,1=选
+  "":      { x: 450, y: 40,  i: 0 },
+  "0":     { x: 230, y: 130, i: 1 },
+  "1":     { x: 670, y: 130, i: 1 },
+  "00":    { x: 120, y: 230, i: 2 },
+  "01":    { x: 340, y: 230, i: 2 },
+  "10":    { x: 560, y: 230, i: 2 },
+  "11":    { x: 780, y: 230, i: 2 },
+  "000":   { x: 70,  y: 340, i: 3 },
+  "001":   { x: 170, y: 340, i: 3 },
+  "010":   { x: 290, y: 340, i: 3 },
+  "011":   { x: 390, y: 340, i: 3 },
+  "100":   { x: 510, y: 340, i: 3 },
+  "101":   { x: 610, y: 340, i: 3 },
+  "110":   { x: 730, y: 340, i: 3 },
+  "111":   { x: 830, y: 340, i: 3 },
+};
+
+// 模拟回溯,生成步骤序列
+// 每个 step: { type, path, codeLine, nodeKey, log, results, action }
+const steps = [];
+
+function pathFromKey(key) {
+  // key 比如 "01" 表示 不选nums[0],选nums[1] → path=[nums[1]]
+  const p = [];
+  for (let i = 0; i < key.length; i++) {
+    if (key[i] === "1") p.push(nums[i]);
+  }
+  return p;
+}
+
+let currentResults = [];
+function snapshot(extra) {
+  return {
+    path: extra.path.slice(),
+    results: currentResults.slice(),
+    ...extra,
+  };
+}
+
+function simulate(key) {
+  const i = key.length;
+  const path = pathFromKey(key);
+
+  // 进入函数
+  steps.push(snapshot({
+    path,
+    codeLine: 0,
+    nodeKey: key,
+    log: { type: "call", text: `dfs(${i}) 进入,path=[${path.join(",")}]` },
+    activeNode: key,
+  }));
+
+  if (i === nums.length) {
+    // 叶子:收集
+    currentResults = currentResults.concat([path.slice()]);
+    steps.push(snapshot({
+      path,
+      codeLine: 2,
+      nodeKey: key,
+      log: { type: "collect", text: `★ 收集 [${path.join(",")}]` },
+      activeNode: key,
+      collected: true,
+    }));
+    return;
+  }
+
+  // 选项 1: 不选 nums[i] —— 直接递归
+  steps.push(snapshot({
+    path,
+    codeLine: 5,
+    nodeKey: key,
+    log: { type: "call", text: `不选 nums[${i}]=${nums[i]},递归 dfs(${i+1})` },
+    activeNode: key,
+    edgeTo: key + "0",
+  }));
+
+  simulate(key + "0");
+
+  // 选项 2: 选 nums[i] —— push,递归,pop
+  steps.push(snapshot({
+    path,
+    codeLine: 6,
+    nodeKey: key,
+    log: { type: "call", text: `回到 dfs(${i}),准备"选 nums[${i}]=${nums[i]}"` },
+    activeNode: key,
+  }));
+
+  // push
+  path.push(nums[i]);
+  steps.push(snapshot({
+    path,
+    codeLine: 6,
+    nodeKey: key,
+    log: { type: "push", text: `path.push(${nums[i]}) → path=[${path.join(",")}]` },
+    activeNode: key,
+    pushed: nums[i],
+  }));
+
+  steps.push(snapshot({
+    path,
+    codeLine: 7,
+    nodeKey: key,
+    log: { type: "call", text: `选 nums[${i}]=${nums[i]},递归 dfs(${i+1})` },
+    activeNode: key,
+    edgeTo: key + "1",
+  }));
+
+  simulate(key + "1");
+
+  // pop
+  path.pop();
+  steps.push(snapshot({
+    path,
+    codeLine: 8,
+    nodeKey: key,
+    log: { type: "pop", text: `path.pop() → path=[${path.join(",")}](撤销 ${nums[i]})` },
+    activeNode: key,
+    popped: nums[i],
+  }));
+
+  // 函数返回
+  steps.push(snapshot({
+    path,
+    codeLine: 9,
+    nodeKey: key,
+    log: { type: "call", text: `dfs(${i}) 返回` },
+    activeNode: key,
+  }));
+}
+
+simulate("");
+
+// ============================================
+// 2. 渲染
+// ============================================
+const codeLines = [
+  '<span class="code-keyword">function</span> dfs(i) {',
+  '  <span class="code-keyword">if</span> (i === nums.length) {',
+  '    result.push([...path]);   <span class="code-comment">// 收集</span>',
+  '    <span class="code-keyword">return</span>;',
+  '  }',
+  '  dfs(i + <span class="code-num">1</span>);                     <span class="code-comment">// ① 不选</span>',
+  '  path.push(nums[i]);          <span class="code-comment">// ② 做选择</span>',
+  '  dfs(i + <span class="code-num">1</span>);                     <span class="code-comment">// ③ 递归</span>',
+  '  path.pop();                  <span class="code-comment">// ④ 撤销选择 ★</span>',
+  '}'
+];
+
+function renderCode(activeLine) {
+  const html = codeLines.map((line, idx) => {
+    const cls = idx === activeLine ? "code-line active" : "code-line";
+    return `<div class="${cls}">${line}</div>`;
+  }).join("");
+  document.getElementById("codeArea").innerHTML = html;
+}
+
+function renderPath(path, opts = {}) {
+  const display = document.getElementById("pathDisplay");
+  display.innerHTML = '<span class="path-bracket">[</span>' +
+    path.map((v, idx) => {
+      let cls = "path-item";
+      if (opts.pushed !== undefined && idx === path.length - 1) cls += " pushing";
+      return `<span class="${cls}">${v}</span>`;
+    }).join("") +
+    '<span class="path-bracket">]</span>';
+
+  // pop 时单独处理:显示一个红色"飞出"动画
+  if (opts.popped !== undefined) {
+    const flying = document.createElement("span");
+    flying.className = "path-item popping";
+    flying.style.position = "absolute";
+    flying.textContent = opts.popped;
+    display.appendChild(flying);
+    setTimeout(() => flying.remove(), 400);
+  }
+}
+
+// 初始化决策树 DOM
+function initTree() {
+  const tree = document.getElementById("tree");
+  const svg = document.getElementById("edges");
+
+  // 边
+  const edges = [];
+  Object.keys(treeLayout).forEach(key => {
+    if (key === "") return;
+    const parent = key.slice(0, -1);
+    const choice = key.slice(-1); // "0" or "1"
+    const p = treeLayout[parent];
+    const c = treeLayout[key];
+    edges.push({ from: p, to: c, choice, key });
+  });
+
+  let svgHTML = "";
+  edges.forEach(e => {
+    svgHTML += `<line class="edge" data-key="${e.key}" x1="${e.from.x}" y1="${e.from.y + 14}" x2="${e.to.x}" y2="${e.to.y - 14}"/>`;
+    const mx = (e.from.x + e.to.x) / 2;
+    const my = (e.from.y + e.to.y) / 2;
+    const labelClass = e.choice === "0" ? "skip" : "pick";
+    const labelText = e.choice === "0" ? `不选${nums[e.from.i]}` : `选${nums[e.from.i]}`;
+    svgHTML += `<text class="edge-label ${labelClass}" x="${mx + 6}" y="${my}">${labelText}</text>`;
+  });
+  svg.innerHTML = svgHTML;
+
+  // 节点
+  Object.keys(treeLayout).forEach(key => {
+    const pos = treeLayout[key];
+    const path = pathFromKey(key);
+    const node = document.createElement("div");
+    node.className = "node";
+    node.id = "node-" + (key || "root");
+    node.style.left = pos.x + "px";
+    node.style.top = pos.y + "px";
+    node.innerHTML = `dfs(${pos.i})<div class="node-label">[${path.join(",")}]</div>`;
+    tree.appendChild(node);
+  });
+}
+
+initTree();
+
+// 渲染步骤
+let currentStep = -1;
+function renderStep(idx) {
+  if (idx < 0 || idx >= steps.length) return;
+  const s = steps[idx];
+
+  // 代码
+  renderCode(s.codeLine);
+
+  // path
+  renderPath(s.path, { pushed: s.pushed, popped: s.popped });
+
+  // 节点状态:已访问的标 visited,当前标 active,叶子收集过的标 collected
+  document.querySelectorAll(".node").forEach(n => {
+    n.classList.remove("active", "collected");
+  });
+
+  // 找出"截止当前步"哪些节点访问过、哪些已收集
+  const visitedKeys = new Set();
+  const collectedKeys = new Set();
+  for (let i = 0; i <= idx; i++) {
+    if (steps[i].activeNode !== undefined) visitedKeys.add(steps[i].activeNode);
+    if (steps[i].collected) collectedKeys.add(steps[i].activeNode);
+  }
+  visitedKeys.forEach(k => {
+    const el = document.getElementById("node-" + (k || "root"));
+    if (el) el.classList.add("visited");
+  });
+  collectedKeys.forEach(k => {
+    const el = document.getElementById("node-" + (k || "root"));
+    if (el) {
+      el.classList.remove("visited");
+      el.classList.add("collected");
+    }
+  });
+  // 当前节点
+  if (s.activeNode !== undefined) {
+    const el = document.getElementById("node-" + (s.activeNode || "root"));
+    if (el && !s.collected) el.classList.add("active");
+    else if (el && s.collected) el.classList.add("active");
+  }
+
+  // 边
+  document.querySelectorAll(".edge").forEach(e => e.classList.remove("active"));
+  if (s.edgeTo !== undefined) {
+    const el = document.querySelector(`.edge[data-key="${s.edgeTo}"]`);
+    if (el) el.classList.add("active");
+  }
+
+  // 日志:重新渲染前 idx 步的全部日志
+  const logs = [];
+  for (let i = 0; i <= idx; i++) {
+    const st = steps[i];
+    if (st.log) logs.push(`<div class="log-entry ${st.log.type}">${i + 1}. ${st.log.text}</div>`);
+  }
+  const logPanel = document.getElementById("logPanel");
+  logPanel.innerHTML = logs.join("");
+  logPanel.scrollTop = logPanel.scrollHeight;
+
+  // 结果
+  const resHTML = s.results.map(r => `<div class="result-item">[${r.join(",")}]</div>`).join("");
+  document.getElementById("results").innerHTML = resHTML || '<span style="color:#64748b;font-size:13px">(暂无)</span>';
+
+  // step info
+  document.getElementById("stepInfo").textContent = `步骤 ${idx + 1} / ${steps.length}`;
+  document.getElementById("btnPrev").disabled = idx <= 0;
+  document.getElementById("btnNext").disabled = idx >= steps.length - 1;
+}
+
+// ============================================
+// 3. 控制
+// ============================================
+function reset() {
+  currentStep = -1;
+  document.querySelectorAll(".node").forEach(n => n.classList.remove("visited", "active", "collected"));
+  document.querySelectorAll(".edge").forEach(e => e.classList.remove("active"));
+  renderPath([]);
+  renderCode(-1);
+  document.getElementById("logPanel").innerHTML = "";
+  document.getElementById("results").innerHTML = '<span style="color:#64748b;font-size:13px">(暂无)</span>';
+  document.getElementById("stepInfo").textContent = `步骤 0 / ${steps.length}`;
+  document.getElementById("btnPrev").disabled = true;
+  document.getElementById("btnNext").disabled = false;
+  stopAuto();
+}
+
+let autoTimer = null;
+function stopAuto() {
+  if (autoTimer) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+    document.getElementById("btnPlay").textContent = "▶ 自动播放";
+  }
+}
+function startAuto() {
+  const speed = parseInt(document.getElementById("speedSel").value, 10);
+  document.getElementById("btnPlay").textContent = "⏸ 暂停";
+  autoTimer = setInterval(() => {
+    if (currentStep >= steps.length - 1) { stopAuto(); return; }
+    currentStep++;
+    renderStep(currentStep);
+  }, speed);
+}
+
+document.getElementById("btnNext").addEventListener("click", () => {
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    renderStep(currentStep);
+  }
+});
+document.getElementById("btnPrev").addEventListener("click", () => {
+  if (currentStep > 0) {
+    currentStep--;
+    renderStep(currentStep);
+  }
+});
+document.getElementById("btnReset").addEventListener("click", reset);
+document.getElementById("btnPlay").addEventListener("click", () => {
+  if (autoTimer) stopAuto();
+  else startAuto();
+});
+
+reset();
+</script>
+</body>
+</html>
