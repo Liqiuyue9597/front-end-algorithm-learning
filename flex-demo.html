@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>flex: 1 交互式演示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 32px;
+    line-height: 1.6;
+  }
+  h1 { font-size: 24px; margin-bottom: 8px; color: #89b4fa; }
+  h2 { font-size: 18px; margin: 24px 0 12px; color: #f9e2af; }
+  .subtitle { color: #a6adc8; margin-bottom: 24px; font-size: 14px; }
+  .demo-block {
+    background: #313244;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .demo-block .label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .demo-block .label strong {
+    color: #a6e3a1;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 15px;
+  }
+  .demo-block .label span {
+    color: #a6adc8;
+    font-size: 13px;
+  }
+  .container {
+    display: flex;
+    background: #45475a;
+    border: 2px dashed #585b70;
+    height: 70px;
+    width: 100%;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1e1e2e;
+    font-weight: 600;
+    border-right: 2px solid #1e1e2e;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    padding: 0 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .item:last-child { border-right: none; }
+  .a { background: #f38ba8; }
+  .b { background: #fab387; }
+  .c { background: #a6e3a1; }
+  
+  .controls {
+    background: #313244;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+  }
+  .controls label {
+    display: block;
+    margin: 8px 0;
+    color: #cdd6f4;
+  }
+  .controls input[type="range"] {
+    width: 100%;
+    margin-top: 4px;
+  }
+  .controls .row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .controls .row strong {
+    min-width: 120px;
+    color: #f9e2af;
+    font-family: monospace;
+  }
+  .controls .row span {
+    min-width: 50px;
+    color: #a6e3a1;
+    font-family: monospace;
+  }
+  .layout-demo {
+    display: flex;
+    height: 120px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px dashed #585b70;
+  }
+  .layout-demo .left, .layout-demo .right {
+    width: 150px;
+    flex-shrink: 0;
+    background: #cba6f7;
+    color: #1e1e2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+  .layout-demo .center {
+    flex: 1;
+    background: #94e2d5;
+    color: #1e1e2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+  code {
+    background: #181825;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #f5c2e7;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 13px;
+  }
+  .note {
+    background: #181825;
+    border-left: 4px solid #f9e2af;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  .resize-hint {
+    color: #f38ba8;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎨 <code>flex</code> 简写对比演示</h1>
+<p class="subtitle">3 个 flex 子项 A / B / C，B 的内容比 A 和 C 长很多，看在不同 <code>flex</code> 值下表现差异。</p>
+
+<!-- ===== Demo 1: flex: 1 ===== -->
+<div class="demo-block">
+  <div class="label">
+    <strong>flex: 1 &nbsp;&nbsp;→&nbsp;&nbsp; 1 1 0%</strong>
+    <span>完全平分容器空间，无视内容长度</span>
+  </div>
+  <div class="container">
+    <div class="item a" style="flex: 1;">A</div>
+    <div class="item b" style="flex: 1;">BBBBBBBBBBBBBBBBBBBBBBBBBB</div>
+    <div class="item c" style="flex: 1;">C</div>
+  </div>
+  <div class="note">A、B、C <strong>宽度完全相等</strong>。哪怕 B 的内容很长，也不会比别人宽——因为 <code>basis: 0%</code> 让所有 item 从 0 开始，按 grow=1 平分。</div>
+</div>
+
+<!-- ===== Demo 2: flex: auto ===== -->
+<div class="demo-block">
+  <div class="label">
+    <strong>flex: auto &nbsp;&nbsp;→&nbsp;&nbsp; 1 1 auto</strong>
+    <span>先按内容撑开，剩余空间再按比例分</span>
+  </div>
+  <div class="container">
+    <div class="item a" style="flex: auto;">A</div>
+    <div class="item b" style="flex: auto;">BBBBBBBBBBBBBBBBBBBBBBBBBB</div>
+    <div class="item c" style="flex: auto;">C</div>
+  </div>
+  <div class="note">B 明显比 A 和 C <strong>宽很多</strong>——因为 <code>basis: auto</code> 让 item 先按内容尺寸定起点，B 的内容长就先占大头。</div>
+</div>
+
+<!-- ===== Demo 3: flex: none ===== -->
+<div class="demo-block">
+  <div class="label">
+    <strong>flex: none &nbsp;&nbsp;→&nbsp;&nbsp; 0 0 auto</strong>
+    <span>完全按内容尺寸，不放大也不缩小</span>
+  </div>
+  <div class="container">
+    <div class="item a" style="flex: none;">A</div>
+    <div class="item b" style="flex: none;">BBBBBBBBBBBBBBBBBBBBBBBBBB</div>
+    <div class="item c" style="flex: none;">C</div>
+  </div>
+  <div class="note">每个 item <strong>紧贴内容</strong>，剩余空间空着不分。</div>
+</div>
+
+<!-- ===== Demo 4: flex: initial ===== -->
+<div class="demo-block">
+  <div class="label">
+    <strong>flex: initial（默认值） &nbsp;&nbsp;→&nbsp;&nbsp; 0 1 auto</strong>
+    <span>按内容尺寸，能缩不能放</span>
+  </div>
+  <div class="container">
+    <div class="item a" style="flex: initial;">A</div>
+    <div class="item b" style="flex: initial;">BBBBBBBBBBBBBBBBBBBBBBBBBB</div>
+    <div class="item c" style="flex: initial;">C</div>
+  </div>
+  <div class="note">和 <code>none</code> 看起来差不多，但容器变窄时 item <strong>会被压缩</strong>（none 不会）。</div>
+</div>
+
+<!-- ===== Demo 5: flex: 0 ===== -->
+<div class="demo-block">
+  <div class="label">
+    <strong>flex: 0 &nbsp;&nbsp;→&nbsp;&nbsp; 0 1 0%</strong>
+    <span>basis 是 0，又不放大 → 缩到最小</span>
+  </div>
+  <div class="container">
+    <div class="item a" style="flex: 0;">A</div>
+    <div class="item b" style="flex: 0;">BBBBBBBBBBBBBBBBBBBBBBBBBB</div>
+    <div class="item c" style="flex: 0;">C</div>
+  </div>
+  <div class="note">item 缩到内容的<strong>最小宽度</strong>（被 min-content 兜底），剩余空间全空出来。</div>
+</div>
+
+<!-- ===== 三栏布局 ===== -->
+<h2>📐 经典应用：左右定宽 + 中间自适应（三栏布局）</h2>
+<p class="subtitle">把窗口拉宽拉窄看效果——左右两栏永远 150px，中间自动伸缩。</p>
+<div class="layout-demo">
+  <div class="left">左 150px（flex-shrink: 0）</div>
+  <div class="center">中间 flex: 1（自适应）</div>
+  <div class="right">右 150px（flex-shrink: 0）</div>
+</div>
+<div class="note">
+核心 CSS：
+<pre style="margin-top:8px; color:#a6e3a1; font-family:monospace; font-size:13px;">.left, .right { width: 150px; flex-shrink: 0; }
+.center { flex: 1; }</pre>
+</div>
+
+<!-- ===== 交互式三值调节 ===== -->
+<h2>🎛️ 交互式调节 grow / shrink / basis</h2>
+<p class="subtitle">拖动滑条改变 B 的 flex 值，观察 B 相对 A 和 C 的变化。</p>
+
+<div class="controls">
+  <div class="row">
+    <strong>flex-grow</strong>
+    <input type="range" id="grow" min="0" max="5" step="1" value="1">
+    <span id="growVal">1</span>
+  </div>
+  <div class="row">
+    <strong>flex-shrink</strong>
+    <input type="range" id="shrink" min="0" max="5" step="1" value="1">
+    <span id="shrinkVal">1</span>
+  </div>
+  <div class="row">
+    <strong>flex-basis</strong>
+    <input type="range" id="basis" min="0" max="400" step="10" value="0">
+    <span id="basisVal">0px</span>
+  </div>
+  <div style="margin-top:12px; color:#a6adc8; font-size:13px;">
+    当前 B 的 flex 值：<code id="flexValue">1 1 0px</code>
+  </div>
+</div>
+
+<div class="container">
+  <div class="item a" style="flex: 1 1 0%;">A (flex: 1)</div>
+  <div class="item b" id="dynamicB" style="flex: 1 1 0px;">B (动态)</div>
+  <div class="item c" style="flex: 1 1 0%;">C (flex: 1)</div>
+</div>
+
+<div class="note" style="margin-top:16px;">
+试试这些组合：
+<ul style="margin:8px 0 0 24px; line-height:1.8;">
+  <li><code>grow=2, shrink=1, basis=0</code> → B 拿到 A 和 C 两倍的剩余空间</li>
+  <li><code>grow=0, shrink=1, basis=200</code> → B 固定 200px（除非空间不够才被压缩）</li>
+  <li><code>grow=1, shrink=0, basis=300</code> → B 至少 300px，且容器变窄也不缩</li>
+</ul>
+</div>
+
+<script>
+const grow = document.getElementById('grow');
+const shrink = document.getElementById('shrink');
+const basis = document.getElementById('basis');
+const growVal = document.getElementById('growVal');
+const shrinkVal = document.getElementById('shrinkVal');
+const basisVal = document.getElementById('basisVal');
+const dynamicB = document.getElementById('dynamicB');
+const flexValue = document.getElementById('flexValue');
+
+function update() {
+  const g = grow.value;
+  const s = shrink.value;
+  const b = basis.value;
+  growVal.textContent = g;
+  shrinkVal.textContent = s;
+  basisVal.textContent = b + 'px';
+  const flexStr = `${g} ${s} ${b}px`;
+  dynamicB.style.flex = flexStr;
+  flexValue.textContent = flexStr;
+  dynamicB.textContent = `B (flex: ${flexStr})`;
+}
+
+grow.addEventListener('input', update);
+shrink.addEventListener('input', update);
+basis.addEventListener('input', update);
+</script>
+
+</body>
+</html>

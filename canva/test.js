@@ -226,7 +226,7 @@ var twoSum = function (nums, target) {
     const p = target - nums[i];
     if (!map.has(p)) {
       map.set(p, i);
-    } else{
+    } else {
       return [map.get(p), i]
     }
   }
@@ -236,3 +236,74 @@ function toCamelCase(str) {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
+function promiseAll(arr) {
+  return new Promise((resolve, reject) => {
+    const res = [];
+    let count = 0;
+    if (arr.length === 0) return resolve(arr);
+
+    arr.forEach(item => {
+      Promise.resolve(item).then((data) => {
+        res[count++] = data
+      }).catch(err => reject(err))
+      if (res.length === count) resolve(res)
+    })
+  })
+}
+
+function promiseRice(arr) {
+  return new Promise((resolve, reject) => {
+    for (const item of arr) {
+      Promise.resolve(item).then((data) => {
+        resolve(data)
+      }).catch(err => reject(err))
+    }
+  })
+}
+
+Array.prototype.myMap = function (fn, thisArg) {
+  const res = []
+  for (let i = 0; i < this.length; i++) {
+    res.push(fn.call(thisArg, this[i]))
+  }
+
+  return res;
+}
+
+Array.prototype.myReduce = function (fn, initialValue) {
+  let res = initialValue;
+  let startIdx = 0;
+  if (arguments.length < 2) {
+    res = this[0]
+    startIdx = 1
+  }
+
+  for (let i = startIdx; i < this.length; i++) {
+    res = fn(res, this[i]);
+  }
+
+  return res;
+}
+
+
+class EventEmitter {
+  constructor() {
+    this.eventList = {}
+  }
+
+  on(event, listner) {
+
+  }
+
+  emit(event) {
+
+  }
+
+  off(event) {
+
+  }
+
+  once(event, listner) {
+    
+  }
+}
